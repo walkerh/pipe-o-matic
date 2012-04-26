@@ -1,0 +1,74 @@
+#!/usr/bin/env python2.7
+
+"""Execute or manage a pipeline in a particular context (directory)."""
+
+# Author: Walker Hale (hale@bcm.edu), Apr 25, 2012
+#         Human Genome Sequencing Center, Baylor College of Medicine
+#
+# Refinery is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Refinery is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Refinery.  If not, see <http://www.gnu.org/licenses/>.
+
+import argparse
+import os
+import sys
+
+
+def main(args=None):
+    if not args:
+        args = sys.argv[1:]
+    command = parse_args(args)
+    command.func(command)
+
+
+def parse_args(args):
+    """Return parsed arguments."""
+    parser = build_command_parser()
+    command = parser.parse_args(args)
+    if not os.path.isdir(command.context):
+        parser.exit('%r is not a directory' % command.context)
+    command.context = os.path.realpath(os.path.expanduser(command.context))
+    return command
+
+
+def build_command_parser():
+    # top-level parser
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        'context', help='the directory that defines the context of execution'
+    )
+    subparsers = parser.add_subparsers()
+    # parser for the "run" command
+    parser_run = subparsers.add_parser('run')
+    parser_run.set_defaults(func=run)
+    parser_run.add_argument(
+        '--params', nargs='*', metavar='KEY=VALUE',
+        help='optional key=value pairs (use for debugging only)'
+    )
+    # parser for the "status" command
+    parser_status = subparsers.add_parser('status')
+    parser_status.set_defaults(func=status)
+    return parser
+
+
+def run(command):
+    """Start or restart the pipeline"""
+    print 'run', command
+
+
+def status(command):
+    """Report status of the pipeline"""
+    print 'status', command
+
+
+if __name__ == '__main__':
+    main()
