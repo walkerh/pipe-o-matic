@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+rm -rf target/case01/expect
+mkdir -p target/case01/expect
+cp testing/foo-input target/case01/expect/
+cd target/case01/expect/
+../../../testing/dummies/bar-1.1/bin/bar >bar.log
+cat foo-input | ../../../testing/dummies/foo-1.0/bin/foo 123 abc >foo.log

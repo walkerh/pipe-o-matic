@@ -1,0 +1,8 @@
+single-task: "1.0"
+executable: foo
+version: "1.0"
+arguments:
+  - '123'
+  - abc
+stdin: input_file  # may be parameterized
+stdout: foo.log
