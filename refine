@@ -34,6 +34,7 @@ def parse_args_and_env(args):
     """Return results of parsing arguments and checking environment."""
     parser = build_command_parser()
     command = parser.parse_args(args)
+    # TODO: add support for setting REFINERY_BASE in a config file.
     command.refinery_path = os.environ['REFINERY_BASE']
     command.pipeline_path = os.path.join(
         command.refinery_path, 'pipelines', command.pipeline + '.yaml'
