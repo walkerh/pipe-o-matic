@@ -44,6 +44,10 @@ def build_command_parser():
     # top-level parser
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
+        'pipeline',
+        help='the name of the pipeline to execute inside $REFINERY_BASE'
+    )
+    parser.add_argument(
         'context', help='the directory that defines the context of execution'
     )
     subparsers = parser.add_subparsers()
