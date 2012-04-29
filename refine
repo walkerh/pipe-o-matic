@@ -34,6 +34,12 @@ def parse_args(args):
     """Return parsed arguments."""
     parser = build_command_parser()
     command = parser.parse_args(args)
+    command.refinery_path = os.environ['REFINERY_BASE']
+    command.pipeline_path = os.path.join(
+        command.refinery_path, command.pipeline + '.yaml'
+    )
+    if not os.path.isfile(command.pipeline_path):
+        parser.exit('%r is not a file' % command.pipeline_path)
     if not os.path.isdir(command.context):
         parser.exit('%r is not a directory' % command.context)
     command.context = os.path.realpath(os.path.expanduser(command.context))
