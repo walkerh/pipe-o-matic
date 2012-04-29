@@ -26,12 +26,12 @@ import sys
 def main(args=None):
     if not args:
         args = sys.argv[1:]
-    command = parse_args(args)
+    command = parse_args_and_env(args)
     command.func(command)
 
 
-def parse_args(args):
-    """Return parsed arguments."""
+def parse_args_and_env(args):
+    """Return results of parsing arguments and checking environment."""
     parser = build_command_parser()
     command = parser.parse_args(args)
     command.refinery_path = os.environ['REFINERY_BASE']
