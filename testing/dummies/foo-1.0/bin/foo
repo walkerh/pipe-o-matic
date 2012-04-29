@@ -1,8 +1,4 @@
-#!/usr/bin/env python2.7
-import sys
-print 'inside foo'
-print repr(sys.argv[1:])
-count = 0
-for line in sys.stdin:
-    count += 1
-    sys.stdout.write('%02d %s' % (count, line))
+#!/usr/bin/env bash
+echo 'inside foo'
+echo "$@"
+cat -n

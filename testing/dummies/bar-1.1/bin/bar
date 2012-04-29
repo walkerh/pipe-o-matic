@@ -1,2 +1,2 @@
-#!/usr/bin/env python2.7
-print 'inside bar'
+#!/usr/bin/env bash
+echo 'inside bar'
