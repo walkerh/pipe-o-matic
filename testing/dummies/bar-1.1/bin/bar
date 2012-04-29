@@ -1,2 +1,5 @@
 #!/usr/bin/env bash
+
+# Imagine this is one of your scripts.
+
 echo 'inside bar'
