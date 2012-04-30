@@ -1,0 +1,44 @@
+= The Refinery Pipeline Framework =
+
+This repository is a **work in progress** for a system for authoring data pipelines. For now the core functionality is not yet implemented. Move along...
+
+A pipeline is more than just a script. It carefully tracks which steps have been executed and provides facilities for recovering from errors.
+
+Example pipeline: my-pipeline-1.yaml
+
+{{{
+- explicit-sequence: "1.0"
+- executable-versions:
+  foo: "1.0"
+  bar: "1.0"
+- command: mkdir
+  dir: sub_dir
+- executable: foo
+  stdin: input_file  # may be parameterized
+  stdout: sub_dir/intermediate_file
+- command: md5
+  stdin: sub_dir/intermediate_file
+  stdout: checksum.md5
+- executable: bar
+  arguments:
+    - sub_dir  # may be parameterized
+  stderr: bar.log
+}}}
+
+Assuming that things are configured correctly, you could run that pipeline like this:
+
+{{{
+refine my-pipeline-1 $BASE_DIR
+}}}
+
+In order for that to work, you would need some way of locating those executables. You would do so with a deployments file:
+
+deployments.yaml
+{{{
+deployments: "1.0"
+foo:
+    "1.0": /usr/local/foo-1.0/bin/foo  # path to the executable
+bar:
+    "1.0": /usr/local/bar-1.0/bin/bar
+}}}
+
