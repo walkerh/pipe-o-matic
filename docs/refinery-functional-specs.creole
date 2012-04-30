@@ -1,0 +1,468 @@
+= Functional Specification of The Refinery Pipeline Framework =
+
+Version 1.0-WIP
+
+Author: Walker Hale IV, walker.hale.iv@gmail.com, 2012
+
+Copyright 2012 Baylor College of Medicine
+
+This work is licensed under the Creative Commons Attribution-ShareAlike 3.0 Unported License. To view a copy of this license, visit [[http://creativecommons.org/licenses/by-sa/3.0/]] or send a letter to Creative Commons, 444 Castro Street, Suite 900, Mountain View, California, 94041, USA.
+
+This document describes the functional specifications for Refinery, a pipeline framework.
+
+== Pipeline Requirements ==
+
+This specification defines a framework for creating pipelines that:
+
+# are reproducible
+# are version-able
+# use known fixed versions of its executables (foo and bar here)
+# track their progress
+# capture log files
+# halt immediately on errors
+# can recover from errors
+# can be installed on systems where the executables where installed in different locations than on the original system
+# can be controlled externally during execution by
+## setting break points
+## pausing after each step
+
+In order to satisfy requirement 8, the pipeline framework must allow pipeline authors to invoke specific versions of executables without specifying their locations in the pipeline. Pipeline deployers must then create a file that lets the pipeline execution engine know where to find these versions. Pipeline users can then go on to run the pipeline without having to specify versions or locations of executables.
+
+Requirement 9 allows the user to put a specific pipeline execution in a mode where is will halt after finishing some step. The pipeline will resume when the user tells the pipeline to do so.
+
+=== Philosophy ===
+
+* Pipeline versioning should mean that the execution of one version of a pipeline is not perturbed by the creation of a new version of that pipeline.
+* Pipelines should not contain absolute paths. The locations of executables should be specified in configuration files outside of the pipelines. This way, pipelines are portable between systems.
+* Pipelines should avoid communicating with remote databases and web services during the middle of execution. Doing so exposes the pipeline to failure.
+* Ideally a pipeline should accumulate all of its input data at the beginning. This is when any data any database queries and web service queries should be run.
+* A pipeline should avoid attempting to send important information to remote databases or web services until the end. It is, however, acceptable to transmit information remotely so long as transmission failures are harmless. For example, sending progress report information may be fine.
+* In order to avoid data loss or corruption, pipelines should read their input data and store their results in the most robust way possible for their environment. For local compute clusters, this usually means a shared filesystem. For public cloud computing, this might mean some type of messaging system or a web storage solution, such as Amazon's S3. If using a messaging service, it should support redundant fail-over. Whatever the pipeline uses, it should be robust.
+* Pipelines should minimize the number of external services they depend upon. Ideally a pipeline should depend upon only one external service such as a network filesystem or a web storage system.
+* Pipelines should fail fast upon the first detection of error.
+* Pipelines should be easily restartable for transient errors.
+* Pipelines should use logging. There should be a master log (machine readable) for the starting and completion of the pipeline steps, and each non-trivial step should generate its own log(s). Parallel job executions should use separate log files.
+* Pipelines should avoid modifying or overwriting files. Instead pipelines should just create new files. Exceptions:
+** Appending to a log file is expected.
+** Parameter files should be re-generating when the user commands it, but if a pipeline is in the middle of execution this will generate a warning and require a force flag.
+* Batch job pipeline steps should generate log messages when the job is submitted, started, and exited. The log recording job submission, should record enough information to detect if the execution of the job terminated silently. (This is easier than it sounds.)
+
+== Motivating Example ==
+
+Scenario: You have two executables, foo and bar, that you wish to run. The standard output of foo must go into a file in a sub-directory, and that sub-directory path is the input to bar.
+
+Conceptually: the execution steps might look like this:
+
+reference.sh
+{{{
+cd $BASE_DIR                                          # step 0 (doesn't count)
+mkdir sub_dir                                         # step 1
+foo <input_file >sub_dir/intermediate_file            # step 2
+md5sum <sub_dir/intermediate_file >checksum.md5       # step 3
+bar sub_dir 2>bar.log  # creates sub_dir/output_file  # step 4
+}}}
+
+Using this framework, you would create a pipeline that encapsulates all of the above logic and specifies required versions for foo and bar.
+
+You should be able to run that pipeline like this:
+
+{{{
+refine my-pipeline-1 $BASE_DIR
+}}}
+
+As the pipeline runs, the steps are recorded in a special nested log inside "$BASE_DIR/.refinery". By default any standard error and standard output will be captured into log files in that directory.
+
+Suppose further that one of the executions of your pipeline cause bar to terminate with an error. Assuming the input was "good", there are three possible causes:
+
+# The failure was random, due to some external problem.
+# The problem is in the bar executable.
+# The problem is in the foo executable, which generated input unsatisfactory to bar.
+
+(1) If you determine that the first case is true, then re-running the pipeline with the exact same command line, is sufficient.
+
+{{{
+refine my-pipeline-1 $BASE_DIR
+}}}
+
+The pipeline engine will have recorded all of the previously completed steps, so it will just start up on step 4.
+
+(2) If you determine that the second case is true, then you must:
+
+* Create an updated version of bar.
+* Create an updated version of the pipeline to use the new version of bar.
+* Run the new pipeline with the exact same command line.
+
+{{{
+refine my-pipeline-2 $BASE_DIR
+}}}
+
+Again, the pipeline engine will just start on step 4.
+
+(3) If you determine that the third case is true, then you must:
+
+* Create an updated version of foo.
+* Create an updated version of the pipeline to use the new version of foo.
+* Run the new pipeline with a modified command line that would have the effect of starting over with execution of foo.
+
+{{{
+refine my-pipeline-2 $BASE_DIR --restart=2
+}}}
+
+In this case we told the pipeline engine that it must go back to step 2.
+
+This last case demonstrates the need for a recovery mode that includes undoing previously executed steps. In this case, steps 2 and 3 are undone, and then pipeline execution begins at step 2.
+
+(For development purposes, it is useful to define "-dev" versions of pipelines. That way you don't need to define a new version for something until you know it works.)
+
+== Implementing the Motivating Example from ad hoc Commands ==
+
+The easiest way to create a simple pipeline is to create a file with everything inside. This is very similar to the reference.sh script. The main difference is that executable versions are explicit and there is more opportunity to define named properties and link them.
+
+my-ad-hoc-pipeline-1.yaml
+{{{
+- inline-sequence: "1.0"
+- executable-versions:
+  foo: "1.0"
+  bar: "1.0"
+- mkdir sub_dir                                         # step 1
+- foo <input_file >sub_dir/intermediate_file            # step 2
+- md5sum <sub_dir/intermediate_file >checksum.md5       # step 3
+- bar sub_dir 2>bar.log  # creates sub_dir/output_file  # step 4
+}}}
+
+This format, "inline-sequence", relies on using whitespace to split the elements, and will break if there is any whitespace in any of the arguments. This format cannot handle complex features.
+
+my-ad-hoc-pipeline-1.yaml is just a short-cut for this:
+
+my-ad-hoc-pipeline-expanded-1.yaml
+{{{
+- explicit-sequence: "1.0"
+- executable-versions:
+  foo: "1.0"
+  bar: "1.0"
+# mkdir sub_dir                                    # step 1
+- command: mkdir
+  dir: sub_dir
+# foo <input_file >sub_dir/intermediate_file       # step 2
+- executable: foo
+  stdin: input_file  # may be parameterized
+  stdout: sub_dir/intermediate_file
+# md5sum <sub_dir/intermediate_file >checksum.md5  # step 3
+- command: md5
+  stdin: sub_dir/intermediate_file
+  stdout: checksum.md5
+# bar sub_dir  # creates sub_dir/output_file       # step 4
+- executable: bar
+  arguments:
+    - sub_dir  # may be parameterized
+  stderr: bar.log
+}}}
+
+It is always possible to mechanically translate inline-sequence files into explicit-sequence files, but there is no general solution for going the other way.
+
+== Implementing the Motivating Example from Testable Components ==
+
+The idea here is to build a pipeline up from independently tested pieces. The smallest pieces are "single-task" pipelines that provide information for wrapping a single executable.
+
+The power of this approach comes from two things:
+
+* testing
+* parameterization
+** a big deal
+** more on that later
+
+=== Define Single Task Pipelines for "foo" and "bar" ===
+
+foo-1.yaml
+{{{
+single-task: "1.0"
+executable: foo
+version: "1.0"
+stdin: input_file  # may be parameterized
+stdout: sub_dir/intermediate_file
+}}}
+
+bar-1.yaml
+{{{
+single-task: "1.0"
+executable: bar
+version: "1.0"
+arguments:
+  - sub_dir  # may be parameterized
+stderr: bar.log
+}}}
+
+=== Define A Sequential Pipeline ===
+
+my-pipeline-1.yaml
+{{{
+- explicit-sequence: "1.0"
+- pipeline-versions:
+  foo: "1.0"
+  bar: "1.0"
+# mkdir sub_dir                                    # step 1
+- command: mkdir
+  dir: sub_dir
+# foo <input_file >sub_dir/intermediate_file       # step 2
+- pipeline: foo
+# md5sum <sub_dir/intermediate_file >checksum.md5  # step 3
+- command: md5
+  stdin: sub_dir/intermediate_file
+  stdout: checksum.md5
+# bar sub_dir  # creates sub_dir/output_file       # step 4
+- pipeline: bar
+}}}
+
+== Defining the Locations of "foo" and "bar" ==
+
+In order to make pipelines portable across systems, it is necessary to decouple logical dependencies from physical paths on the system. This file is a two-level map. Given the name and version of a piece of software, the file documents the location of the executable.
+
+$REFINERY_BASE/deployments.yaml records the deployed locations of software on your system:
+{{{
+deployments: "1.0"
+foo:
+    dev: /home/bio-team/projects/foo/bin/foo
+    "0.9": /usr/local/foo-0.9/bin/foo
+    "1.0": /usr/local/foo-1.0/bin/foo  # path to the executable
+bar:
+    dev: /home/bio-team/projects/bar/bin/bar
+    "1.0": /usr/local/bar-1.0/bin/bar
+    "1.1": /usr/local/bar-1.0/bin/bar
+}}}
+
+Later versions of Refinery could allow extensions of this file in order to specify version-specific environment variables for some software.
+
+== Usage ==
+
+Assuming that:
+
+* Refinery is installed and configured.
+* Your pipeline is installed into $REFINERY_BASE as "my-pipeline-1".
+
+# Define a base directory that is the context for a single execution of the pipeline.
+## Two pipelines cannot use the same base directory at the same time.
+## Attempting to run the same pipeline twice in the same base directory will simply result in the second execution reporting that there is nothing to do while waiting for the first execution to finish.
+# Create a properties file in the base directory that contains any execution parameters that cannot be derived from the path of the base directory and the definition of the pipeline.
+# Execute the pipeline as follows:
+
+{{{refine my-pipeline-1 $BASE_DIR}}}
+
+=== Making Pipelines Executable ===
+
+It is possible to make pipelines executable, so that the "refine" command does not need to be invoked explicitly.
+
+First, add this line to the top of your pipeline:
+{{{
+#!/usr/bin/env refine
+}}}
+
+Second, set the executable bit on the file for your pipeline.
+{{{
+chmod +x $REFINERY_BASE/my-pipeline-1
+}}}
+
+Finally, add your pipeline file to your PATH environment variable.
+
+Once all three steps are complete, it is possible to execute a pipeline like this:
+{{{
+my-pipeline-1 $BASE_DIR
+}}}
+
+== Parameterization ==
+
+A pipeline may require additional varying parameters beyond just the name of the base directory. (Fixed parameters are just hard-coded into the pipeline.) These parameters are expressed as key-value pairs in a flat namespace. Such varying parameters can be provided in several ways:
+
+* provided on the command line during invocation (should be //rare//)
+* computed inside a pipeline
+* passed into an inner pipeline from an outer pipeline
+* read from a parameters file
+
+A parameters file is just a YAML file of key-value pairs. It is possible to have a special step in a pipeline execute a script to generate such a file. Any parameter generation scripts mentioned within a pipeline, including its nested children, are executed at the beginning of a run before any pipeline steps. More details on this are in the Parameter Generation section.
+
+Parameter maps "stack". As each parameter map is read, it sits "on top" of the previous maps. If a given parameter name is not defined in the current map, previous maps are searched until the value is found. If no map defines a parameter, it is an error. This error is determined at the start of pipeline execution, and the test is deep (inner pipelines are not tested).
+
+Thus, it is possible to test a pipeline for parameter correctness without executing any production code. Note that:
+
+* This will cause any parameter generation scripts to run.
+* The result of the test depends on any command-line parameters that are passed to the pipeline.
+
+Here is the order of parameter map creation:
+
+* $BASE_DIR/refinery-defaults.yaml (if present)
+* parameters specified during invocation of the pipeline
+** specified on command line for outer pipeline
+** specified during invocation of an inner pipeline
+* parameters explicitly read from a file at the start of the pipeline
+** including inner pipelines
+* parameters computed at the start of the pipeline using expressions within the pipeline definition file
+
+== Object Model ==
+
+In order to have a common language for describing the functionality in detail, it is necessary to describe an object model. This model is user-centric.
+
+=== Abstract Pipeline ===
+
+The concept of an Abstract Pipeline is to define the features that all pipeline types will have in common. The concept is abstract in the same way that "mammal" is abstract: you can't have an animal that is just a "mammal"; the animal must be a member of some species of mammal.
+
+The features of an abstract pipeline are mostly described in the Execution Model. Basically they include things like parameter accumulation, logging, fail-fast, and versioning.
+
+=== Single Task Pipeline ===
+
+A single task pipeline is a simple wrapper around a specific version of some executable. The pipeline defines inputs (including environment) and outputs (including logging). The pipeline inherits all of the behavior of the abstract pipeline.
+
+=== Built-in Command Pipeline ===
+
+A built-in command pipeline is a wrapper for a standard command like mkdir, mv, or cp. Unlike single task pipelines, built-in command pipelines have no need for versioning. In order to preserve backwards compatibility, later versions of refinery must preserve the semantics of built-in command pipelines, unless the version change alters the first part of the version: for example, 1.9 -> 2.0.
+
+Built-in command pipelines always require named parameters. They do not care about the base directory, except as the root for relative paths.
+
+=== Sequential Pipeline ===
+
+A sequential pipeline is just an ordered collection of pipelines. Any concrete type of pipeline may be contained, including other sequential pipelines. Nesting is allowed; recursion is not.
+
+=== Batch Execution Pipeline ===
+
+A batch execution pipeline wraps a single pipeline of any other concrete type in order to provide batch job semantics. Typically a batch execution pipeline is inside a sequential pipeline. See the Execution Model section for details on what happens.
+
+=== Parallel Pipeline ===
+
+A parallel pipeline wraps a single pipeline of any other concrete type. When the parallel pipeline is executed, the inner pipeline will be invoked multiple times. Each invocation of the inner pipeline will receive a different value for a loop parameter.
+
+The parallel pipeline builds on the semantics of batch execution, although it is possible to run the inner pipeline invocations sequentially.
+
+== Execution Model ==
+
+For the purpose of this document:
+
+* $BASE_DIR refers to the directory that defines the context of an execution of one or more a pipelines. Generally, $BASE_DIR contains all the input data that is needed by a single pipeline execution, or links to that data. For any value of $BASE_DIR, only one pipeline can be running at any given time. $BASE_DIR is specified on the command line when invoking a pipeline.
+* $REFINERY_BASE refers to the directory that contains all of your pipeline files or links to those files. $REFINERY_BASE should be set during the installation and configuration of the Refinery software on a system, but users and teams can override that location by setting REFINERY_BASE as an environment variable. If several teams are using the same installation of refinery on a shared system, then each team should each have their own $REFINERY_BASE.
+
+Refinery maintains a repository of execution information inside the directory $BASE_DIR/.refinery. This contains a machine readable master log, recording the execution status of each pipeline step. (Detailed logs go elsewhere, in pipeline-specified locations.)
+
+It is possible that none of the actual data is inside $BASE_DIR, and the only information initially inside $BASE_DIR is the name of the directory itself and possibly the contents of refinery-defaults.yaml. In that case, the purpose of $BASE_DIR may be just to hold tracking information (in $BASE_DIR/.refinery). Even then, $BASE_DIR could be used to hold output files and logs.
+
+* Collect command line parameters:
+** pipeline name and version (eg. my-pipeline-1)
+** base directory
+** sub-command
+** options
+* Read $BASE_DIR/refinery-defaults.yaml if present.
+* Create $BASE_DIR/.refinery and the master log if missing.
+* Parse pipeline into object graph in memory.
+* Read the master log file in $BASE_DIR/.refinery/ for current execution status.
+* Exit with error if another pipeline is running.
+* Accumulate a list of pipeline-specific parameter files and their corresponding generators.
+* Generate or re-generate parameter files if required.
+* Test entire pipeline for parameter correctness, and exit if any required parameters are missing.
+* Test entire pipeline to assure that all mentioned dependencies are available.
+** Is the dependency mentioned in $REFINERY_BASE/deployments.yaml?
+** Does the corresponding file path exist?
+** If this dependency is supposed to be an executable, is the execute bit set?
+* Execute the pipeline steps. For each step:
+** Record a start event in the master log.
+** Create a new parameter map at the top of the stack.
+** Execute any parameter expressions defined at the top of the pipeline file for that step.
+** Perform the required action.
+** Halt or sleep if this type of pipeline step requires it. The pipeline can be restarted later. This is normal for batch jobs, which will continue executing elsewhere.
+** If the action is local to the currently running machine, then record the exit results.
+** If the step exited with error, halt execution.
+** Move on to the next step, if any.
+
+=== Command Line Parameters ===
+
+* pipeline name and version (eg. my-pipeline-1)
+* base directory
+* sub-command
+** execute (default)
+** single step
+** query status
+** show main log
+** output hierarchy of pipeline objects and versions
+** output parsable list of log files
+** terminate
+*** requires that the pipeline is currently halted
+*** records in the master log, that no further processing should happen
+* options
+** specify log verbosity
+** restart execution at an earlier step
+** re-generate parameters
+** force execution of pipeline, even though another pipeline is halted
+** key/value pairs (use //rarely//)
+
+=== Master Log File ===
+
+The master log file records the beginning and end of every step in a pipeline, including the pipeline itself.
+
+TODO
+
+=== Parameter Generation ===
+
+Parameter Generation is the mechanism that pipelines can use to fetch values from databases or web services prior to execution.
+
+At the earliest stages of execution, the pipeline engine accumulates an ordered list of pairs of parameter file name and parameter generation script. (The script part of the pair may be null.) If any parameter file is missing and a corresponding script is defined, then the pipeline engine will execute that script. The input to the script is a serialization of all parameters accumulated so far. The output of the script is written to corresponding parameter file.
+
+There are command line options to force the generation or re-generation of parameter files.
+
+When testing a pipeline for parameter correctness the output of any parameter generation scripts is not written to files, because we are just testing.
+
+== Monitoring and Reporting ==
+
+TODO: talk about text-based and web-based reporting and dashboard facilities. For quick-and-dirty monitoring, you launch a magic command, and get an instant web server. (Press control-C to kill the server.)
+
+Implementation: I recommend the Flask micro web framework for web-based monitoring. [[http://flask.pocoo.org/]]
+
+== Usage Recommendations ==
+
+TODO
+
+== Comparison to Known Existing Products ==
+
+=== bpipe ===
+
+TODO
+
+=== LOFAR ===
+
+[[http://lus.lofar.org/documentation/pipeline/overview/overview/index.html]]
+
+TODO
+
+== Implementation Roadmap ==
+
+=== If Implementing from Scratch ===
+
+# Built-in Command
+# Single Task
+# Abstract Pipeline (extract base class from Single Task)
+# Sequential (inherits from Abstract Pipeline)
+# Batch
+# Parallel (tricky sandboxing issues)
+
+=== If Modifying or Wrapping an Existing Project ===
+
+TODO
+
+== More Usage Examples ==
+
+TODO: an example of "forking" to try different parameter sets.
+
+== Vocabulary Issues ==
+
+Establishing a consistent vocabulary that makes sense to the users is critical to the success of most software projects.
+
+* What should we call it when: a batch job is submitted, and the job dies silently?
+* Regarding the directory pointed to by $BASE_DIR, the only required parameter for executing a specific pipeline: what should we call this directory?
+** base directory
+** working directory
+** context directory
+** execution context
+* Regarding the directory pointed to by $REFINERY_BASE, is this a good variable name? Should we call this directory the "refinery base" or something else?
+** refinery base
+** pipeline base
+** pipeline repository
+* What terms should we use for the various types of pausing execution:
+** pausing at the next available opportunity
+** pausing at every opportunity
+** pausing at the end of a specified step
+* Are there any other vocabulary issues?
+* Do you have any recommendations for new vocabulary?
