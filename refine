@@ -36,7 +36,7 @@ def parse_args(args):
     command = parser.parse_args(args)
     command.refinery_path = os.environ['REFINERY_BASE']
     command.pipeline_path = os.path.join(
-        command.refinery_path, command.pipeline + '.yaml'
+        command.refinery_path, 'pipelines', command.pipeline + '.yaml'
     )
     if not os.path.isfile(command.pipeline_path):
         parser.exit('%r is not a file' % command.pipeline_path)
