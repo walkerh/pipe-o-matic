@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 
+if [[ "$1" == '-v' ]]; then
+    shift
+    export VERBOSE=1
+else
+    export VERBOSE=''
+fi
+
 export TEST_ROOT=$(cd $(dirname "$0"); pwd)
 export PROJECT_ROOT=$(dirname "$TEST_ROOT")
 export REFINERY_BASE="$TEST_ROOT"/refinery_base
@@ -7,7 +14,9 @@ export REFINERY_BASE="$TEST_ROOT"/refinery_base
 cd "$TEST_ROOT"
 
 for case_dir in $(ls "$TEST_ROOT"/cases); do
-    echo $case_dir
+    if [[ "$VERBOSE" ]]; then
+        echo $case_dir
+    fi
     test_case_path="$TEST_ROOT"/cases/"$case_dir"
     output_path="$PROJECT_ROOT"/target/test/"$case_dir"
     rm -rf "$output_path"

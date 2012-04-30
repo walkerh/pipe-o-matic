@@ -57,6 +57,7 @@ def build_command_parser():
     parser.add_argument(
         'context', help='the directory that defines the context of execution'
     )
+    parser.add_argument('-v', '--verbose', action='store_true')
     subparsers = parser.add_subparsers()
     # parser for the "run" command
     parser_run = subparsers.add_parser('run')
@@ -73,12 +74,14 @@ def build_command_parser():
 
 def run(command):
     """Start or restart the pipeline"""
-    print 'run', command
+    if command.verbose:
+        print >>sys.stderr, 'run', command
 
 
 def status(command):
     """Report status of the pipeline"""
-    print 'status', command
+    if command.verbose:
+        print >>sys.stderr, 'status', command
 
 
 if __name__ == '__main__':
