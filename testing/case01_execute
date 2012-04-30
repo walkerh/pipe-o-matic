@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-
-rm -rf target/case01/execute
-mkdir -p target/case01/execute
-cp testing/foo-input target/case01/execute/
-export REFINERY_BASE=$(dirname $0)/refinery_base
-
-./refine bar-1 target/case01/execute run
-./refine foo-1 target/case01/execute run
