@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+output_path="$1"
+
+# Generate expected results.
+cp data/foo-input "$output_path"/expect/
+(  # Use a sub-shell to isolate side-effects.
+    set -e  # Exit upon error.
+    cd "$output_path"/expect/
+    "$TEST_ROOT"/dummies/bar-1.1/bin/bar >bar.log
+    cat foo-input | "$TEST_ROOT"/dummies/foo-1.0/bin/foo 123 abc >foo.log
+)
+
+# Generate pipeline results.
+cp data/foo-input "$output_path"/execute/
+(  # Use a sub-shell to isolate side-effects.
+    set -e  # Exit upon error.
+    "$PROJECT_ROOT"/refine bar-1 "$output_path"/execute run
+    "$PROJECT_ROOT"/refine foo-1 "$output_path"/execute run
+)
+if [[ $? != 0 ]]; then
+    echo "Error in $0"
+fi
+
+# Compare.
+diff -qr "$output_path"/expect "$output_path"/execute
