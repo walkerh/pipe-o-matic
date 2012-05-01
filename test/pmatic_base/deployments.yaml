@@ -1,4 +1,4 @@
-deployments: "1.0"
+file_type: deployments-1
 foo:
     "1.0": ${pmatic_base}/../dummies/foo-1.0/bin/foo
 

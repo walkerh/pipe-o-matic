@@ -120,7 +120,7 @@ The easiest way to create a simple pipeline is to create a file with everything 
 
 my-ad-hoc-pipeline-1.yaml
 {{{
-- inline-sequence: "1.0"
+- file_type: inline-sequence-1
 - executable-versions:
   foo: "1.0"
   bar: "1.0"
@@ -136,7 +136,7 @@ my-ad-hoc-pipeline-1.yaml is just a short-cut for this:
 
 my-ad-hoc-pipeline-expanded-1.yaml
 {{{
-- explicit-sequence: "1.0"
+- file_type: explicit-sequence-1
 - executable-versions:
   foo: "1.0"
   bar: "1.0"
@@ -175,7 +175,7 @@ The power of this approach comes from two things:
 
 foo-1.yaml
 {{{
-single-task: "1.0"
+file_type: single-task-1
 executable: foo
 version: "1.0"
 stdin: input_file  # may be parameterized
@@ -184,7 +184,7 @@ stdout: sub_dir/intermediate_file
 
 bar-1.yaml
 {{{
-single-task: "1.0"
+file_type: single-task-1
 executable: bar
 version: "1.0"
 arguments:
@@ -196,10 +196,10 @@ stderr: bar.log
 
 my-pipeline-1.yaml
 {{{
-- explicit-sequence: "1.0"
+- file_type: explicit-sequence-1
 - pipeline-versions:
-  foo: "1.0"
-  bar: "1.0"
+  foo: 1
+  bar: 1
 # mkdir sub_dir                                    # step 1
 - command: mkdir
   dir: sub_dir
@@ -219,7 +219,7 @@ In order to make pipelines portable across systems, it is necessary to decouple 
 
 $PMATIC_BASE/deployments.yaml records the deployed locations of software on your system:
 {{{
-deployments: "1.0"
+file_type: deployments-1
 foo:
     dev: /home/bio-team/projects/foo/bin/foo
     "0.9": /usr/local/foo-0.9/bin/foo

@@ -1,4 +1,4 @@
-single-task: "1.0"
+file_type: single-task-1
 executable: bar
 version: "1.1"
 stdout: bar.log
