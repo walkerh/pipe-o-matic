@@ -1,4 +1,4 @@
-= Functional Specification of The Refinery Pipeline Framework =
+= Functional Specification of The Pipe-o-matic Pipeline Framework =
 
 Version 1.0-WIP
 
@@ -8,7 +8,7 @@ Copyright 2012 Baylor College of Medicine
 
 This work is licensed under the Creative Commons Attribution-ShareAlike 3.0 Unported License. To view a copy of this license, visit [[http://creativecommons.org/licenses/by-sa/3.0/]] or send a letter to Creative Commons, 444 Castro Street, Suite 900, Mountain View, California, 94041, USA.
 
-This document describes the functional specifications for Refinery, a pipeline framework.
+This document describes the functional specifications for Pipe-o-matic, a pipeline framework.
 
 == Pipeline Requirements ==
 
@@ -67,10 +67,10 @@ Using this framework, you would create a pipeline that encapsulates all of the a
 You should be able to run that pipeline like this:
 
 {{{
-refine my-pipeline-1 $BASE_DIR
+pmatic my-pipeline-1 $BASE_DIR
 }}}
 
-As the pipeline runs, the steps are recorded in a special nested log inside "$BASE_DIR/.refinery". By default any standard error and standard output will be captured into log files in that directory.
+As the pipeline runs, the steps are recorded in a special nested log inside "$BASE_DIR/.pmatic". By default any standard error and standard output will be captured into log files in that directory.
 
 Suppose further that one of the executions of your pipeline cause bar to terminate with an error. Assuming the input was "good", there are three possible causes:
 
@@ -81,7 +81,7 @@ Suppose further that one of the executions of your pipeline cause bar to termina
 (1) If you determine that the first case is true, then re-running the pipeline with the exact same command line, is sufficient.
 
 {{{
-refine my-pipeline-1 $BASE_DIR
+pmatic my-pipeline-1 $BASE_DIR
 }}}
 
 The pipeline engine will have recorded all of the previously completed steps, so it will just start up on step 4.
@@ -93,7 +93,7 @@ The pipeline engine will have recorded all of the previously completed steps, so
 * Run the new pipeline with the exact same command line.
 
 {{{
-refine my-pipeline-2 $BASE_DIR
+pmatic my-pipeline-2 $BASE_DIR
 }}}
 
 Again, the pipeline engine will just start on step 4.
@@ -105,7 +105,7 @@ Again, the pipeline engine will just start on step 4.
 * Run the new pipeline with a modified command line that would have the effect of starting over with execution of foo.
 
 {{{
-refine my-pipeline-2 $BASE_DIR --restart=2
+pmatic my-pipeline-2 $BASE_DIR --restart=2
 }}}
 
 In this case we told the pipeline engine that it must go back to step 2.
@@ -217,7 +217,7 @@ my-pipeline-1.yaml
 
 In order to make pipelines portable across systems, it is necessary to decouple logical dependencies from physical paths on the system. This file is a two-level map. Given the name and version of a piece of software, the file documents the location of the executable.
 
-$REFINERY_BASE/deployments.yaml records the deployed locations of software on your system:
+$PMATIC_BASE/deployments.yaml records the deployed locations of software on your system:
 {{{
 deployments: "1.0"
 foo:
@@ -230,14 +230,14 @@ bar:
     "1.1": /usr/local/bar-1.0/bin/bar
 }}}
 
-Later versions of Refinery could allow extensions of this file in order to specify version-specific environment variables for some software.
+Later versions of Pipe-o-matic could allow extensions of this file in order to specify version-specific environment variables for some software.
 
 == Usage ==
 
 Assuming that:
 
-* Refinery is installed and configured.
-* Your pipeline is installed into $REFINERY_BASE as "my-pipeline-1".
+* Pipe-o-matic is installed and configured.
+* Your pipeline is installed into $PMATIC_BASE as "my-pipeline-1".
 
 # Define a base directory that is the context for a single execution of the pipeline.
 ## Two pipelines cannot use the same base directory at the same time.
@@ -245,20 +245,20 @@ Assuming that:
 # Create a properties file in the base directory that contains any execution parameters that cannot be derived from the path of the base directory and the definition of the pipeline.
 # Execute the pipeline as follows:
 
-{{{refine my-pipeline-1 $BASE_DIR}}}
+{{{pmatic my-pipeline-1 $BASE_DIR}}}
 
 === Making Pipelines Executable ===
 
-It is possible to make pipelines executable, so that the "refine" command does not need to be invoked explicitly.
+It is possible to make pipelines executable, so that the "pmatic" command does not need to be invoked explicitly.
 
 First, add this line to the top of your pipeline:
 {{{
-#!/usr/bin/env refine
+#!/usr/bin/env pmatic
 }}}
 
 Second, set the executable bit on the file for your pipeline.
 {{{
-chmod +x $REFINERY_BASE/my-pipeline-1
+chmod +x $PMATIC_BASE/my-pipeline-1
 }}}
 
 Finally, add your pipeline file to your PATH environment variable.
@@ -288,7 +288,7 @@ Thus, it is possible to test a pipeline for parameter correctness without execut
 
 Here is the order of parameter map creation:
 
-* $BASE_DIR/refinery-defaults.yaml (if present)
+* $BASE_DIR/pmatic-defaults.yaml (if present)
 * parameters specified during invocation of the pipeline
 ** specified on command line for outer pipeline
 ** specified during invocation of an inner pipeline
@@ -312,7 +312,7 @@ A single task pipeline is a simple wrapper around a specific version of some exe
 
 === Built-in Command Pipeline ===
 
-A built-in command pipeline is a wrapper for a standard command like mkdir, mv, or cp. Unlike single task pipelines, built-in command pipelines have no need for versioning. In order to preserve backwards compatibility, later versions of refinery must preserve the semantics of built-in command pipelines, unless the version change alters the first part of the version: for example, 1.9 -> 2.0.
+A built-in command pipeline is a wrapper for a standard command like mkdir, mv, or cp. Unlike single task pipelines, built-in command pipelines have no need for versioning. In order to preserve backwards compatibility, later versions of pipe-o-matic must preserve the semantics of built-in command pipelines, unless the version change alters the first part of the version: for example, 1.9 -> 2.0.
 
 Built-in command pipelines always require named parameters. They do not care about the base directory, except as the root for relative paths.
 
@@ -335,27 +335,27 @@ The parallel pipeline builds on the semantics of batch execution, although it is
 For the purpose of this document:
 
 * $BASE_DIR refers to the directory that defines the context of an execution of one or more a pipelines. Generally, $BASE_DIR contains all the input data that is needed by a single pipeline execution, or links to that data. For any value of $BASE_DIR, only one pipeline can be running at any given time. $BASE_DIR is specified on the command line when invoking a pipeline.
-* $REFINERY_BASE refers to the directory that contains all of your pipeline files or links to those files. $REFINERY_BASE should be set during the installation and configuration of the Refinery software on a system, but users and teams can override that location by setting REFINERY_BASE as an environment variable. If several teams are using the same installation of refinery on a shared system, then each team should each have their own $REFINERY_BASE.
+* $PMATIC_BASE refers to the directory that contains all of your pipeline files or links to those files. $PMATIC_BASE should be set during the installation and configuration of the Pipe-o-matic software on a system, but users and teams can override that location by setting PMATIC_BASE as an environment variable. If several teams are using the same installation of pipe-o-matic on a shared system, then each team should each have their own $PMATIC_BASE.
 
-Refinery maintains a repository of execution information inside the directory $BASE_DIR/.refinery. This contains a machine readable master log, recording the execution status of each pipeline step. (Detailed logs go elsewhere, in pipeline-specified locations.)
+Pipe-o-matic maintains a repository of execution information inside the directory $BASE_DIR/.pmatic. This contains a machine readable master log, recording the execution status of each pipeline step. (Detailed logs go elsewhere, in pipeline-specified locations.)
 
-It is possible that none of the actual data is inside $BASE_DIR, and the only information initially inside $BASE_DIR is the name of the directory itself and possibly the contents of refinery-defaults.yaml. In that case, the purpose of $BASE_DIR may be just to hold tracking information (in $BASE_DIR/.refinery). Even then, $BASE_DIR could be used to hold output files and logs.
+It is possible that none of the actual data is inside $BASE_DIR, and the only information initially inside $BASE_DIR is the name of the directory itself and possibly the contents of pmatic-defaults.yaml. In that case, the purpose of $BASE_DIR may be just to hold tracking information (in $BASE_DIR/.pmatic). Even then, $BASE_DIR could be used to hold output files and logs.
 
 * Collect command line parameters:
 ** pipeline name and version (eg. my-pipeline-1)
 ** base directory
 ** sub-command
 ** options
-* Read $BASE_DIR/refinery-defaults.yaml if present.
-* Create $BASE_DIR/.refinery and the master log if missing.
+* Read $BASE_DIR/pmatic-defaults.yaml if present.
+* Create $BASE_DIR/.pmatic and the master log if missing.
 * Parse pipeline into object graph in memory.
-* Read the master log file in $BASE_DIR/.refinery/ for current execution status.
+* Read the master log file in $BASE_DIR/.pmatic/ for current execution status.
 * Exit with error if another pipeline is running.
 * Accumulate a list of pipeline-specific parameter files and their corresponding generators.
 * Generate or re-generate parameter files if required.
 * Test entire pipeline for parameter correctness, and exit if any required parameters are missing.
 * Test entire pipeline to assure that all mentioned dependencies are available.
-** Is the dependency mentioned in $REFINERY_BASE/deployments.yaml?
+** Is the dependency mentioned in $PMATIC_BASE/deployments.yaml?
 ** Does the corresponding file path exist?
 ** If this dependency is supposed to be an executable, is the execute bit set?
 * Execute the pipeline steps. For each step:
@@ -456,8 +456,9 @@ Establishing a consistent vocabulary that makes sense to the users is critical t
 ** working directory
 ** context directory
 ** execution context
-* Regarding the directory pointed to by $REFINERY_BASE, is this a good variable name? Should we call this directory the "refinery base" or something else?
-** refinery base
+* Regarding the directory pointed to by $PMATIC_BASE, is this a good variable name? Should we call this directory the "pipe-o-matic base" or something else?
+** pipe-o-matic base
+** pmatic base
 ** pipeline base
 ** pipeline repository
 * What terms should we use for the various types of pausing execution:

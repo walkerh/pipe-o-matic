@@ -1,4 +1,4 @@
-= The Refinery Pipeline Framework =
+= The Pipe-o-matic Pipeline Framework =
 
 This repository is a **work in progress** for a system for authoring data pipelines. For now the core functionality is not yet implemented. Move along...
 
@@ -28,7 +28,7 @@ Example pipeline: my-pipeline-1.yaml
 Assuming that things are configured correctly, you could run that pipeline like this:
 
 {{{
-refine my-pipeline-1 $BASE_DIR
+pmatic my-pipeline-1 $BASE_DIR
 }}}
 
 In order for that to work, you would need some way of locating those executables. You would do so with a deployments file:

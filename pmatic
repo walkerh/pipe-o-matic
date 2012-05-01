@@ -5,18 +5,18 @@
 # Author: Walker Hale (hale@bcm.edu), Apr 25, 2012
 #         Human Genome Sequencing Center, Baylor College of Medicine
 #
-# Refinery is free software: you can redistribute it and/or modify
+# Pipe-o-matic is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Refinery is distributed in the hope that it will be useful,
+# Pipe-o-matic is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Refinery.  If not, see <http://www.gnu.org/licenses/>.
+# along with Pipe-o-matic.  If not, see <http://www.gnu.org/licenses/>.
 
 import argparse
 import os
@@ -34,10 +34,10 @@ def parse_args_and_env(args):
     """Return results of parsing arguments and checking environment."""
     parser = build_command_parser()
     command = parser.parse_args(args)
-    # TODO: add support for setting REFINERY_BASE in a config file.
-    command.refinery_path = os.environ['REFINERY_BASE']
+    # TODO: add support for setting PMATIC_BASE in a config file.
+    command.pmatic_path = os.environ['PMATIC_BASE']
     command.pipeline_path = os.path.join(
-        command.refinery_path, 'pipelines', command.pipeline + '.yaml'
+        command.pmatic_path, 'pipelines', command.pipeline + '.yaml'
     )
     if not os.path.isfile(command.pipeline_path):
         parser.exit('%r is not a file' % command.pipeline_path)
@@ -52,7 +52,7 @@ def build_command_parser():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         'pipeline',
-        help='the name of the pipeline to execute inside $REFINERY_BASE'
+        help='the name of the pipeline to execute inside $PMATIC_BASE'
     )
     parser.add_argument(
         'context', help='the directory that defines the context of execution'

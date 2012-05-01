@@ -16,10 +16,10 @@ cp data/foo-input "$output_path"/execute/
 (  # Use a sub-shell to isolate side-effects.
     set -e  # Exit upon error.
     if [[ "$VERBOSE" ]]; then
-        REFINE_OPTS='-v'
+        PMATIC_OPTS='-v'
     fi
-    "$PROJECT_ROOT"/refine $REFINE_OPTS bar-1 "$output_path"/execute run
-    "$PROJECT_ROOT"/refine $REFINE_OPTS foo-1 "$output_path"/execute run
+    "$PROJECT_ROOT"/pmatic $PMATIC_OPTS bar-1 "$output_path"/execute run
+    "$PROJECT_ROOT"/pmatic $PMATIC_OPTS foo-1 "$output_path"/execute run
 )
 if [[ $? != 0 ]]; then
     echo "Error in $0"

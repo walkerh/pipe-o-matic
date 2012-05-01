@@ -9,7 +9,7 @@ fi
 
 export TEST_ROOT=$(cd $(dirname "$0"); pwd)
 export PROJECT_ROOT=$(dirname "$TEST_ROOT")
-export REFINERY_BASE="$TEST_ROOT"/refinery_base
+export PMATIC_BASE="$TEST_ROOT"/pmatic_base
 
 cd "$TEST_ROOT"
 
