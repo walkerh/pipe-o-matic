@@ -38,8 +38,8 @@ cp data/foo-input "$output_path"/execute/
     if [[ "$VERBOSE" ]]; then
         PMATIC_OPTS='-v'
     fi
-    "$PROJECT_ROOT"/pmatic $PMATIC_OPTS bar-1 "$output_path"/execute run
-    "$PROJECT_ROOT"/pmatic $PMATIC_OPTS foo-1 "$output_path"/execute run
+    "$PROJECT_ROOT"/bin/pmatic $PMATIC_OPTS bar-1 "$output_path"/execute run
+    "$PROJECT_ROOT"/bin/pmatic $PMATIC_OPTS foo-1 "$output_path"/execute run
 )
 if [[ $? != 0 ]]; then
     echo "Error in $0"
