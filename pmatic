@@ -2,8 +2,10 @@
 
 """Execute or manage a pipeline in a particular context (directory)."""
 
-# Author: Walker Hale (hale@bcm.edu), Apr 25, 2012
+# Author: Walker Hale (hale@bcm.edu), 2012
 #         Human Genome Sequencing Center, Baylor College of Medicine
+#
+# This file is part of Pipe-o-matic.
 #
 # Pipe-o-matic is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
