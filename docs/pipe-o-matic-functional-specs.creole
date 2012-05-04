@@ -237,7 +237,7 @@ Later versions of Pipe-o-matic could allow extensions of this file in order to s
 Assuming that:
 
 * Pipe-o-matic is installed and configured.
-* Your pipeline is installed into $PMATIC_BASE as "my-pipeline-1".
+* Your pipeline is installed into $PMATIC_BASE/pipelines as "my-pipeline-1".
 
 # Define a base directory that is the context for a single execution of the pipeline.
 ## Two pipelines cannot use the same base directory at the same time.
@@ -335,7 +335,7 @@ The parallel pipeline builds on the semantics of batch execution, although it is
 For the purpose of this document:
 
 * $BASE_DIR refers to the directory that defines the context of an execution of one or more a pipelines. Generally, $BASE_DIR contains all the input data that is needed by a single pipeline execution, or links to that data. For any value of $BASE_DIR, only one pipeline can be running at any given time. $BASE_DIR is specified on the command line when invoking a pipeline.
-* $PMATIC_BASE refers to the directory that contains all of your pipeline files or links to those files. $PMATIC_BASE should be set during the installation and configuration of the Pipe-o-matic software on a system, but users and teams can override that location by setting PMATIC_BASE as an environment variable. If several teams are using the same installation of pipe-o-matic on a shared system, then each team should each have their own $PMATIC_BASE.
+* $PMATIC_BASE refers to the directory that contains all of your pipeline files (inside the pipelines directory) or links to those files. $PMATIC_BASE should be set during the installation and configuration of the Pipe-o-matic software on a system, but users and teams can override that location by setting PMATIC_BASE as an environment variable. If several teams are using the same installation of pipe-o-matic on a shared system, then each team should each have their own $PMATIC_BASE.
 
 Pipe-o-matic maintains a repository of execution information inside the directory $BASE_DIR/.pmatic. This contains a machine readable master log, recording the execution status of each pipeline step. (Detailed logs go elsewhere, in pipeline-specified locations.)
 
