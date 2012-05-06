@@ -33,6 +33,13 @@ export PMATIC_BASE="$TEST_ROOT"/pmatic_base
 
 cd "$TEST_ROOT"
 
+echo
+date
+
+if [[ $(type -P pep8) ]]; then
+    pep8 ../bin/pmatic
+fi
+
 for case_dir in $(ls "$TEST_ROOT"/cases); do
     if [[ "$VERBOSE" ]]; then
         echo $case_dir
