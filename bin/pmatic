@@ -67,7 +67,7 @@ def build_command_parser():
     parser_run.add_argument(
         '--params', nargs='*', metavar='KEY=VALUE',
         help='optional key=value pairs (use for debugging only)'
-    )
+    )  # TODO parse params into a dict
     # parser for the "status" command
     parser_status = subparsers.add_parser('status')
     parser_status.set_defaults(func=status)
