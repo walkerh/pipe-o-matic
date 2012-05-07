@@ -26,19 +26,19 @@ import sys
 
 class PipelineEngine(object):
     def __init__(
-            self, pipeline, pmatic_path, context_path,
+            self, pipeline_name, pmatic_path, context_path,
             verbose=False, params=None
         ):
         """command is a Namespace from parsing the command line.
         Typical values:
-        pipeline='foo-1',
+        pipeline_name='foo-1',
         pmatic_path='/...pipe-o-matic/test/pmatic_base',
         context='/.../pipe-o-matic/target/test/case01/execute',
         verbose=False,
         params=None
         """
         super(PipelineEngine, self).__init__()
-        self.pipeline = pipeline
+        self.pipeline_name = pipeline_name
         self.pmatic_path = abspath(pmatic_path)
         self.context = abspath(context_path)
         self.verbose = verbose
@@ -49,7 +49,7 @@ class PipelineEngine(object):
         pipeline."""
         if self.verbose:
             print >>sys.stderr, (
-                "running %(pipeline)s in %(context)s" % self.__dict__
+                "running %(pipeline_name)s in %(context)s" % self.__dict__
             )
         pass  # TODO
 
@@ -63,9 +63,9 @@ def abspath(path):
     return os.path.abspath(os.path.expanduser(path))
 
 
-def pipeline_path(pmatic_path, pipeline):
+def pipeline_path(pmatic_path, pipeline_name):
     """Return the path to the specified pipeline."""
-    return os.path.join(pmatic_path, 'pipelines', pipeline + '.yaml')
+    return os.path.join(pmatic_path, 'pipelines', pipeline_name + '.yaml')
 
 
 class Namespace(collections.Mapping):
