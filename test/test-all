@@ -30,6 +30,11 @@ fi
 export TEST_ROOT=$(cd $(dirname "$0"); pwd)
 export PROJECT_ROOT=$(dirname "$TEST_ROOT")
 export PMATIC_BASE="$TEST_ROOT"/pmatic_base
+export PYTHONPATH="$PROJECT_ROOT"/lib:"$PROJECT_ROOT"/test/lib
+
+if [[ "$VERBOSE" ]]; then
+    echo "PYTHONPATH=$PYTHONPATH"
+fi
 
 cd "$TEST_ROOT"
 
@@ -37,8 +42,10 @@ echo
 date
 
 if [[ $(type -P pep8) ]]; then
-    pep8 ../bin/pmatic
+    pep8 ../bin/pmatic ../lib/*.py lib/*.py
 fi
+
+python -m unittest pmatictest
 
 for case_dir in $(ls "$TEST_ROOT"/cases); do
     if [[ "$VERBOSE" ]]; then
