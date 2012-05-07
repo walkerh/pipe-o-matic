@@ -27,6 +27,10 @@ else
     export VERBOSE=''
 fi
 
+echo
+echo ======================================================================
+date
+
 export TEST_ROOT=$(cd $(dirname "$0"); pwd)
 export PROJECT_ROOT=$(dirname "$TEST_ROOT")
 export PMATIC_BASE="$TEST_ROOT"/pmatic_base
@@ -37,9 +41,6 @@ if [[ "$VERBOSE" ]]; then
 fi
 
 cd "$TEST_ROOT"
-
-echo
-date
 
 if [[ $(type -P pep8) ]]; then
     pep8 ../bin/pmatic ../lib/*.py lib/*.py
