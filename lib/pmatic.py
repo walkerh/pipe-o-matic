@@ -18,10 +18,13 @@
 # You should have received a copy of the GNU General Public License
 # along with Pipe-o-matic.  If not, see <http://www.gnu.org/licenses/>.
 
+import abc
 import collections
 import itertools
 import os
 import sys
+
+import yaml
 
 
 class PipelineEngine(object):
@@ -44,6 +47,8 @@ class PipelineEngine(object):
         self.meta_path = os.path.join(self.context, '.pmatic')
         self.verbose = verbose
         self.params = params
+        self.pipeline = None
+        self.pipeline_loader = PipelineLoader(pmatic_path)
 
     def run(self):
         """Main starting point. Will attempt to start or restart the
@@ -55,10 +60,64 @@ class PipelineEngine(object):
         if os.path.isdir(self.meta_path):
             os.mkdir(self.meta_path)
             # TODO: Add command-line support for creating context directory.
+        self.load_pipeline()
         pass  # TODO
 
     def status(self):
         """Print to stderr and set exit code if error state."""
+        pass  # TODO
+
+    def load_pipeline(self):
+        """Load the pipeline designated by self.pipeline_name."""
+        self.pipeline = self.pipeline_loader.load_pipeline(self.pipeline_name)
+        import pprint
+        pprint.pprint(vars(self.pipeline))
+
+
+class PipelineLoader(object):
+    """Maintains a registry of Pipeline classes and constructs pipelines from
+    files."""
+    def __init__(self, pmatic_path):
+        super(PipelineLoader, self).__init__()
+        self.pmatic_path = pmatic_path
+
+    def load_pipeline(self, pipeline_name):
+        """Return pipeline object."""
+        with open(pipeline_path(self.pmatic_path, pipeline_name)) as fin:
+            data = yaml.load(fin)
+        try:
+            meta_map = data[0]
+        except KeyError:
+            meta_map = data
+        file_type = meta_map['file_type']
+        pipeline_class_name, version = file_type.rsplit('-', 1)
+        # TODO: Select class based on pipeline_class_name
+        klass = SingleTaskPipeline
+        return klass(version, data, pipeline_name)
+
+
+class AbstractPipeline(object):
+    """Abstract base class for all pipeline classes."""
+    __metaclass__ = abc.ABCMeta
+
+    def __init__(self):
+        super(AbstractPipeline, self).__init__()
+
+
+class SingleTaskPipeline(AbstractPipeline):
+    """Pipelines that wrap just one executable."""
+    def __init__(self, version, data, pipeline_name=None):
+        super(SingleTaskPipeline, self).__init__()
+        assert version == '1', 'SingleTaskPipeline currently only version 1'
+        self.pipeline_name = pipeline_name
+        self.executable = None
+        self.version = None
+        self.arguments = []
+        self.stdout = None
+        self.stdin = None
+        self.__dict__.update(data)
+        assert self.executable
+        assert self.version
         pass  # TODO
 
 
