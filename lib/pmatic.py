@@ -41,6 +41,7 @@ class PipelineEngine(object):
         self.pipeline_name = pipeline_name
         self.pmatic_path = abspath(pmatic_path)
         self.context = abspath(context_path)
+        self.meta_path = os.path.join(self.context, '.pmatic')
         self.verbose = verbose
         self.params = params
 
@@ -51,6 +52,9 @@ class PipelineEngine(object):
             print >>sys.stderr, (
                 "running %(pipeline_name)s in %(context)s" % self.__dict__
             )
+        if os.path.isdir(self.meta_path):
+            os.mkdir(self.meta_path)
+            # TODO: Add command-line support for creating context directory.
         pass  # TODO
 
     def status(self):
