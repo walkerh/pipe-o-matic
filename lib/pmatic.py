@@ -39,8 +39,8 @@ class PipelineEngine(object):
         """
         super(PipelineEngine, self).__init__()
         self.pipeline = pipeline
-        self.pmatic_path = pmatic_path
-        self.context = context_path
+        self.pmatic_path = abspath(pmatic_path)
+        self.context = abspath(context_path)
         self.verbose = verbose
         self.params = params
 
@@ -56,6 +56,11 @@ class PipelineEngine(object):
     def status(self):
         """Print to stderr and set exit code if error state."""
         pass  # TODO
+
+
+def abspath(path):
+    """Convenience composition of os.path.abspath and os.path.expanduser"""
+    return os.path.abspath(os.path.expanduser(path))
 
 
 def pipeline_path(pmatic_path, pipeline):

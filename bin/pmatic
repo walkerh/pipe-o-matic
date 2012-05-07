@@ -45,7 +45,6 @@ def parse_args_and_env(args):
         parser.exit('%r is not a file' % pipeline_path)
     if not os.path.isdir(command.context):
         parser.exit('%r is not a directory' % command.context)
-    command.context = os.path.realpath(os.path.expanduser(command.context))
     return command
 
 
