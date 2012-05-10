@@ -22,6 +22,7 @@ import abc
 import collections
 import itertools
 import os
+import string
 import sys
 
 import yaml
@@ -50,6 +51,7 @@ class PipelineEngine(object):
         self.pipeline = None
         self.pipeline_loader = PipelineLoader(pmatic_base)
         self.event_log = EventLog(self.meta_path)
+        self.dependency_finder = DependencyFinder(pmatic_base)
 
     def run(self):
         """Main starting point. Will attempt to start or restart the
@@ -70,6 +72,18 @@ class PipelineEngine(object):
                 'Cannot run, because another pipeline (%r) '
                 + 'is currently running',
                 current_pipeline
+            )
+        dependencies = self.pipeline.get_dependencies()
+        unlisted = set(dependency for dependency in dependencies
+                  if not self.dependency_finder.check_listed(dependency))
+        missing = set(dependency for dependency in (dependencies - unlisted)
+                  if not self.dependency_finder.check_exists(dependency))
+        bad_type = set(dependency for dependency
+                   in (dependencies - unlisted - missing)
+                   if not self.dependency_finder.check_type(dependency))
+        if unlisted or missing or bad_type:
+            fail_dependencies(
+                self.dependency_finder, unlisted, missing, bad_type
             )
         pass  # TODO
 
@@ -104,6 +118,64 @@ class EventLog(object):
         # return 'spam'
 
 
+class DependencyFinder(object):
+    """Keeps track of where the dependencies are located on disk."""
+    def __init__(self, pmatic_base):
+        super(DependencyFinder, self).__init__()
+        self.pmatic_base = pmatic_base
+        deployments_path = deployment_file_path(pmatic_base)
+        with open(deployments_path) as fin:
+            deployment_data = yaml.load(fin)
+        file_type = deployment_data.pop('file_type')
+        assert file_type == 'deployments-1', 'bad type of ' + deployments_path
+        dependency_paths = {}
+        for name, version_map in deployment_data.iteritems():
+            for version, path in version_map.iteritems():
+                dependency_paths[(name, version)] = self.construct_path(path)
+        self.dependency_paths = dependency_paths
+
+    def check_listed(self, dependency):
+        """Verify that dependency is listed in deployments file."""
+        name, version, dependency_type = dependency
+        result = (name, version) in self.dependency_paths
+        return result
+
+    def check_exists(self, dependency):
+        """Verify that dependency exists.
+        Assumes dependency is listed in the deployments file."""
+        path = self.path(dependency)
+        result = os.path.exists(path)
+        return result
+
+    def check_type(self, dependency):
+        """Verify that dependency has correct type.
+        Assumes dependency is listed and exists."""
+        path, dependency_type = self.path_and_type(dependency)
+        test = {
+            'directory': os.path.isdir,
+            'file': os.path.isfile,
+            'executable': is_executable,
+            'link': os.path.islink,
+        }[dependency_type]
+        result = test(path)
+        return result
+
+    def path(self, dependency):
+        """Return absolute path to dependency."""
+        return self.path_and_type(dependency)[0]
+
+    def path_and_type(self, dependency):
+        """Return pair of (absolute path & type)."""
+        name, version, dependency_type = dependency
+        return self.dependency_paths[(name, version)], dependency_type
+
+    def construct_path(self, path):
+        """Return absolute value of path."""
+        t = string.Template(path)
+        result = abspath(t.substitute(dict(pmatic_base=self.pmatic_base)))
+        return result
+
+
 class PipelineLoader(object):
     """Maintains a registry of Pipeline classes and constructs pipelines from
     files."""
@@ -133,6 +205,12 @@ class AbstractPipeline(object):
     def __init__(self):
         super(AbstractPipeline, self).__init__()
 
+    @abc.abstractmethod
+    def get_dependencies(self):
+        """Recursively generate a set of all
+        (dependency, version, dependency_type) triplets."""
+        raise NotImplementedError
+
 
 class SingleTaskPipeline(AbstractPipeline):
     """Pipelines that wrap just one executable."""
@@ -150,6 +228,28 @@ class SingleTaskPipeline(AbstractPipeline):
         assert self.version
         pass  # TODO
 
+    def get_dependencies(self):
+        """Requirement of AbstractPipeline"""
+        return set([(self.executable, self.version, 'executable')])
+
+
+def fail_dependencies(dependency_finder, unlisted, missing, bad_type):
+    if unlisted:
+        print_err('The following dependencies are not listed in %s:',
+                  deployment_file_path(dependency_finder.pmatic_base))
+        for dependency in sorted(unlisted):
+            print_err('%r', dependency)
+    if missing:
+        print_err('The following dependencies are missing:')
+        for dependency in sorted(missing):
+            print_err('%r', dependency_finder.path(dependency))
+    if bad_type:
+        print_err('The following dependencies have the wrong type:')
+        for dependency in sorted(bad_type):
+            path, dependency_type = dependency_finder.path_and_type(dependency)
+            print_err('need %r: %r', dependency_type, path)
+    exit(1)
+
 
 def fail(message, *args):
     """Format message to stderr and exit with a code of 1."""
@@ -165,6 +265,15 @@ def print_err(message, *args):
 
 def exit(code):
     sys.exit(code)
+
+
+def is_executable(path):
+    """Return True if path is an executable. (Unix only)"""
+    return os.path.isfile(path) and os.access(path, os.X_OK)
+
+
+def deployment_file_path(pmatic_base):
+    return os.path.join(pmatic_base, 'deployments.yaml')
 
 
 def pipeline_path(pmatic_base, pipeline_name):
