@@ -39,8 +39,8 @@ def parse_args_and_env(args):
     parser = build_command_parser()
     command = parser.parse_args(args)
     # TODO: add support for setting PMATIC_BASE in a config file.
-    command.pmatic_path = os.environ['PMATIC_BASE']
-    pipeline_path = pmatic.pipeline_path(command.pmatic_path, command.pipeline)
+    command.pmatic_base = os.environ['PMATIC_BASE']
+    pipeline_path = pmatic.pipeline_path(command.pmatic_base, command.pipeline)
     if not os.path.isfile(pipeline_path):
         parser.exit('%r is not a file' % pipeline_path)
     if not os.path.isdir(command.context):
@@ -76,7 +76,7 @@ def build_command_parser():
 def execute(command):
     """Construct a PipelineEngine and dispatch to user-function."""
     engine = pmatic.PipelineEngine(
-        command.pipeline, command.pmatic_path, command.context,
+        command.pipeline, command.pmatic_base, command.context,
         command.verbose, command.params
     )
     command.func(engine)

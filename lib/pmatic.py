@@ -29,26 +29,26 @@ import yaml
 
 class PipelineEngine(object):
     def __init__(
-            self, pipeline_name, pmatic_path, context_path,
+            self, pipeline_name, pmatic_base, context_path,
             verbose=False, params=None
         ):
         """command is a Namespace from parsing the command line.
         Typical values:
         pipeline_name='foo-1',
-        pmatic_path='/...pipe-o-matic/test/pmatic_base',
+        pmatic_base='/...pipe-o-matic/test/pmatic_base',
         context='/.../pipe-o-matic/target/test/case01/execute',
         verbose=False,
         params=None
         """
         super(PipelineEngine, self).__init__()
         self.pipeline_name = pipeline_name
-        self.pmatic_path = abspath(pmatic_path)
+        self.pmatic_base = abspath(pmatic_base)
         self.context = abspath(context_path)
         self.meta_path = os.path.join(self.context, '.pmatic')
         self.verbose = verbose
         self.params = params
         self.pipeline = None
-        self.pipeline_loader = PipelineLoader(pmatic_path)
+        self.pipeline_loader = PipelineLoader(pmatic_base)
 
     def run(self):
         """Main starting point. Will attempt to start or restart the
@@ -77,13 +77,13 @@ class PipelineEngine(object):
 class PipelineLoader(object):
     """Maintains a registry of Pipeline classes and constructs pipelines from
     files."""
-    def __init__(self, pmatic_path):
+    def __init__(self, pmatic_base):
         super(PipelineLoader, self).__init__()
-        self.pmatic_path = pmatic_path
+        self.pmatic_base = pmatic_base
 
     def load_pipeline(self, pipeline_name):
         """Return pipeline object."""
-        with open(pipeline_path(self.pmatic_path, pipeline_name)) as fin:
+        with open(pipeline_path(self.pmatic_base, pipeline_name)) as fin:
             data = yaml.load(fin)
         try:
             meta_map = data[0]
@@ -126,9 +126,9 @@ def abspath(path):
     return os.path.abspath(os.path.expanduser(path))
 
 
-def pipeline_path(pmatic_path, pipeline_name):
+def pipeline_path(pmatic_base, pipeline_name):
     """Return the path to the specified pipeline."""
-    return os.path.join(pmatic_path, 'pipelines', pipeline_name + '.yaml')
+    return os.path.join(pmatic_base, 'pipelines', pipeline_name + '.yaml')
 
 
 class Namespace(collections.Mapping):
