@@ -49,6 +49,7 @@ class PipelineEngine(object):
         self.params = params
         self.pipeline = None
         self.pipeline_loader = PipelineLoader(pmatic_base)
+        self.event_log = EventLog(self.meta_path)
 
     def run(self):
         """Main starting point. Will attempt to start or restart the
@@ -61,6 +62,15 @@ class PipelineEngine(object):
             os.mkdir(self.meta_path)
             # TODO: Add command-line support for creating context directory.
         self.load_pipeline()
+        self.event_log.insure_log_exists()
+        self.event_log.read_log()
+        current_pipeline = self.event_log.get_current_pipeline_name()
+        if current_pipeline and current_pipeline != self.pipeline_name:
+            fail(
+                'Cannot run, because another pipeline (%r) '
+                + 'is currently running',
+                current_pipeline
+            )
         pass  # TODO
 
     def status(self):
@@ -72,6 +82,26 @@ class PipelineEngine(object):
         self.pipeline = self.pipeline_loader.load_pipeline(self.pipeline_name)
         import pprint
         pprint.pprint(vars(self.pipeline))
+
+
+class EventLog(object):
+    """Manages recording a reading of pipeline events."""
+    def __init__(self, meta_path):
+        super(EventLog, self).__init__()
+        self.meta_path = meta_path
+        self.log_data = None
+
+    def insure_log_exists(self):
+        """Create empty log inside self.meta_path if it is missing."""
+        pass  # TODO
+
+    def read_log(self):
+        """Read or re-read log from disk"""
+        pass  # TODO
+
+    def get_current_pipeline_name(self):
+        pass  # TODO
+        # return 'spam'
 
 
 class PipelineLoader(object):
@@ -119,6 +149,22 @@ class SingleTaskPipeline(AbstractPipeline):
         assert self.executable
         assert self.version
         pass  # TODO
+
+
+def fail(message, *args):
+    """Format message to stderr and exit with a code of 1."""
+    print_err(message, *args)
+    exit(1)
+
+
+def print_err(message, *args):
+    """Format and print to stderr"""
+    message_str = message % args
+    print >>sys.stderr, message_str
+
+
+def exit(code):
+    sys.exit(code)
 
 
 def pipeline_path(pmatic_base, pipeline_name):
