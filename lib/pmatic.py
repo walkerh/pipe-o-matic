@@ -121,14 +121,14 @@ class SingleTaskPipeline(AbstractPipeline):
         pass  # TODO
 
 
-def abspath(path):
-    """Convenience composition of os.path.abspath and os.path.expanduser"""
-    return os.path.abspath(os.path.expanduser(path))
-
-
 def pipeline_path(pmatic_base, pipeline_name):
     """Return the path to the specified pipeline."""
     return os.path.join(pmatic_base, 'pipelines', pipeline_name + '.yaml')
+
+
+def abspath(path):
+    """Convenience composition of os.path.abspath and os.path.expanduser"""
+    return os.path.abspath(os.path.expanduser(path))
 
 
 class Namespace(collections.Mapping):
