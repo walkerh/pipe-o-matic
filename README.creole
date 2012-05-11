@@ -1,13 +1,13 @@
 = The Pipe-o-matic Pipeline Framework =
 
-This repository is a **work in progress** for a system for authoring data pipelines. For now the core functionality is not yet implemented. Move along...
+This repository is a **work in progress** for a system for authoring and running data pipelines. For now the core functionality is only partly implemented. Move along...
 
 A pipeline is more than just a script. It carefully tracks which steps have been executed and provides facilities for recovering from errors.
 
 Example pipeline: my-pipeline-1.yaml
 
 {{{
-- explicit-sequence: "1.0"
+- file_type: explicit-sequence-1
 - executable-versions:
   foo: "1.0"
   bar: "1.0"
@@ -28,14 +28,14 @@ Example pipeline: my-pipeline-1.yaml
 Assuming that things are configured correctly, you could run that pipeline like this:
 
 {{{
-pmatic my-pipeline-1 $BASE_DIR
+pmatic my-pipeline-1 $BASE_DIR run
 }}}
 
 In order for that to work, you would need some way of locating those executables. You would do so with a deployments file:
 
 deployments.yaml
 {{{
-deployments: "1.0"
+file_type: deployments-1
 foo:
     "1.0": /usr/local/foo-1.0/bin/foo  # path to the executable
 bar:
