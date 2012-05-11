@@ -28,6 +28,9 @@ import sys
 import yaml
 
 
+META_DIR_NAME = '.pmatic'
+
+
 class PipelineEngine(object):
     def __init__(
             self, pipeline_name, pmatic_base, context_path,
@@ -45,7 +48,7 @@ class PipelineEngine(object):
         self.pipeline_name = pipeline_name
         self.pmatic_base = abspath(pmatic_base)
         self.context = abspath(context_path)
-        self.meta_path = os.path.join(self.context, '.pmatic')
+        self.meta_path = os.path.join(self.context, META_DIR_NAME)
         self.verbose = verbose
         self.params = params
         self.pipeline = None
