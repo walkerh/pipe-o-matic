@@ -63,9 +63,8 @@ class PipelineEngine(object):
             print >>sys.stderr, (
                 "running %(pipeline_name)s in %(context)s" % self.__dict__
             )
-        if not os.path.isdir(self.meta_path):
-            os.mkdir(self.meta_path)
-            # TODO: Add command-line support for creating context directory.
+        insure_directory_exists(self.meta_path)
+        # TODO: Add command-line support for creating context directory.
         self.load_pipeline()
         self.event_log.insure_log_exists()
         self.event_log.read_log()
@@ -268,6 +267,11 @@ def print_err(message, *args):
 
 def exit(code):
     sys.exit(code)
+
+
+def insure_directory_exists(dir_path):
+    if not os.path.isdir(dir_path):
+        os.mkdir(dir_path)
 
 
 def is_executable(path):
