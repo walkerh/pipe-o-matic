@@ -20,9 +20,11 @@
 
 import abc
 import collections
+import contextlib
 import itertools
 import os
 import string
+import subprocess
 import sys
 
 import yaml
@@ -84,7 +86,9 @@ class PipelineEngine(object):
             fail_dependencies(
                 self.dependency_finder, unlisted, missing, bad_type
             )
-        pass  # TODO
+        namespace = Namespace()
+        os.chdir(self.context)
+        self.pipeline.run(self.event_log,  self.dependency_finder, namespace)
 
     def status(self):
         """Print to stderr and set exit code if error state."""
@@ -213,6 +217,11 @@ class AbstractPipeline(object):
         (dependency, version, dependency_type) triplets."""
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def run(self, event_log, dependency_finder, namespace):
+        """Main entry point for a pipeline object."""
+        raise NotImplementedError
+
 
 class SingleTaskPipeline(AbstractPipeline):
     """Pipelines that wrap just one executable."""
@@ -223,8 +232,9 @@ class SingleTaskPipeline(AbstractPipeline):
         self.executable = None
         self.version = None
         self.arguments = []
-        self.stdout = None
         self.stdin = None
+        self.stdout = None
+        self.stderr = None
         self.__dict__.update(data)
         assert self.executable
         assert self.version
@@ -233,6 +243,30 @@ class SingleTaskPipeline(AbstractPipeline):
     def get_dependencies(self):
         """Requirement of AbstractPipeline"""
         return set([(self.executable, self.version, 'executable')])
+
+    def run(self, event_log, dependency_finder, namespace):
+        """Requirement of AbstractPipeline"""
+        # TODO: record start in event_log
+        try:
+            cfin = conditional_file(self.stdin)
+            cfout = conditional_file(self.stdout, 'w')
+            cferr = conditional_file(self.stderr, 'w')
+            with cfin as stdin, cfout as stdout, cferr as stderr:
+                executable_path = dependency_finder.path(
+                    self.get_dependencies().pop()
+                )
+                args = [executable_path]
+                args.extend(self.arguments)
+                proc = subprocess.Popen(
+                    args, stdin=stdin, stdout=stdout, stderr=stderr
+                )
+                exit_code = proc.wait()
+        except Exception, e:
+            # TODO: record result in event_log
+            raise
+        else:
+            # TODO: record result in event_log
+            pass
 
 
 def fail_dependencies(dependency_finder, unlisted, missing, bad_type):
@@ -274,6 +308,19 @@ def exit(code):
 def insure_directory_exists(dir_path):
     if not os.path.isdir(dir_path):
         os.mkdir(dir_path)
+
+
+@contextlib.contextmanager
+def conditional_file(file_path, mode='r', bufsize=-1):
+    """Context manager for conditionally opening a file. Yield None if not
+    file_path, otherwise yield the opened file and then close it at the end.
+    """
+    if not file_path:
+        yield None
+    else:
+        file_object = open(file_path, mode, bufsize)
+        yield file_object
+        file_object.close()
 
 
 def is_executable(path):
