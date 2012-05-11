@@ -93,8 +93,6 @@ class PipelineEngine(object):
     def load_pipeline(self):
         """Load the pipeline designated by self.pipeline_name."""
         self.pipeline = self.pipeline_loader.load_pipeline(self.pipeline_name)
-        import pprint
-        pprint.pprint(vars(self.pipeline))
 
     def debug(self, message='', *args):
         """Format and print to stderr if verbose."""
