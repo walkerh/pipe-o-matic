@@ -4,5 +4,5 @@ version: "1.0"
 arguments:
   - '123'
   - abc
-stdin: input_file  # may be parameterized
+stdin: foo-input  # may be parameterized
 stdout: foo.log
