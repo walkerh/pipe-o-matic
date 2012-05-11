@@ -60,7 +60,7 @@ class PipelineEngine(object):
             print >>sys.stderr, (
                 "running %(pipeline_name)s in %(context)s" % self.__dict__
             )
-        if os.path.isdir(self.meta_path):
+        if not os.path.isdir(self.meta_path):
             os.mkdir(self.meta_path)
             # TODO: Add command-line support for creating context directory.
         self.load_pipeline()
