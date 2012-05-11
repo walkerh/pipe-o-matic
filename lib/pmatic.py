@@ -59,10 +59,7 @@ class PipelineEngine(object):
     def run(self):
         """Main starting point. Will attempt to start or restart the
         pipeline."""
-        if self.verbose:
-            print >>sys.stderr, (
-                "running %(pipeline_name)s in %(context)s" % self.__dict__
-            )
+        self.debug('running %(pipeline_name)s in %(context)s', self.__dict__)
         insure_directory_exists(self.meta_path)
         # TODO: Add command-line support for creating context directory.
         self.load_pipeline()
@@ -98,6 +95,11 @@ class PipelineEngine(object):
         self.pipeline = self.pipeline_loader.load_pipeline(self.pipeline_name)
         import pprint
         pprint.pprint(vars(self.pipeline))
+
+    def debug(self, message='', *args):
+        """Format and print to stderr if verbose."""
+        if self.verbose:
+            print_err(message, *args)
 
 
 class EventLog(object):
@@ -261,6 +263,8 @@ def fail(message, *args):
 
 def print_err(message, *args):
     """Format and print to stderr"""
+    if len(args) == 1:
+        args = args[0]
     message_str = message % args
     print >>sys.stderr, message_str
 
