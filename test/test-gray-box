@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Top-level test script
+# Run external tests (mostly smoke tests)
 
 # Author: Walker Hale (hale@bcm.edu), 2012
 #         Human Genome Sequencing Center, Baylor College of Medicine
@@ -23,6 +23,15 @@
 export TEST_ROOT=$(cd $(dirname "$0"); pwd)
 source "$TEST_ROOT"/lib/test-setup.sh
 
-"$TEST_ROOT"/test-style
-"$TEST_ROOT"/test-unit
-"$TEST_ROOT"/test-gray-box
+for case_dir in $(ls "$TEST_ROOT"/cases); do
+    if [[ "$VERBOSE" ]]; then
+        echo $case_dir
+    fi
+    test_case_path="$TEST_ROOT"/cases/"$case_dir"
+    output_path="$PROJECT_ROOT"/target/test/"$case_dir"
+    rm -rf "$output_path"
+    mkdir -p "$output_path"
+    mkdir "$output_path"/execute
+    mkdir "$output_path"/expect
+    PYTHONPATH="$TEST_PYTHONPATH" "$test_case_path"/test "$output_path"
+done
