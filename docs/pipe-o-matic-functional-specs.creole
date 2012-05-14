@@ -21,7 +21,7 @@ This specification defines a framework for creating pipelines that:
 # capture log files
 # halt immediately on errors
 # can recover from errors
-# can be installed on systems where the executables where installed in different locations than on the original system
+# can be installed on systems where the executables were installed in different locations than on the original system
 # can be controlled externally during execution by
 ## setting break points
 ## pausing after each step
