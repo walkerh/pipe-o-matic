@@ -33,6 +33,29 @@ import yaml
 META_DIR_NAME = '.pmatic'
 
 
+def parse_args_and_env(args, parser):
+    """Return results of parsing arguments and checking environment.
+    Apply business rules to the arguments."""
+    command = parser.parse_args(args)
+    # TODO: add support for setting PMATIC_BASE in a config file.
+    command.pmatic_base = os.environ['PMATIC_BASE']
+    path = pipeline_path(command.pmatic_base, command.pipeline)
+    if not os.path.isfile(path):
+        parser.exit('%r is not a file' % path)
+    if not os.path.isdir(command.context):
+        parser.exit('%r is not a directory' % command.context)
+    return command
+
+
+def build_engine_from_namespace(namespace):
+    """Construct a PipelineEngine and dispatch to user-function."""
+    engine = PipelineEngine(
+        namespace.pipeline, namespace.pmatic_base, namespace.context,
+        namespace.verbose, namespace.params
+    )
+    return engine
+
+
 class PipelineEngine(object):
     def __init__(
             self, pipeline_name, pmatic_base, context_path,

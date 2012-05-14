@@ -30,27 +30,15 @@ import pmatic
 def main(args=None):
     if not args:
         args = sys.argv[1:]
-    command = parse_args_and_env(args)
-    execute(command)
-
-
-def parse_args_and_env(args):
-    """Return results of parsing arguments and checking environment."""
     parser = build_command_parser()
-    command = parser.parse_args(args)
-    # TODO: add support for setting PMATIC_BASE in a config file.
-    command.pmatic_base = os.environ['PMATIC_BASE']
-    pipeline_path = pmatic.pipeline_path(command.pmatic_base, command.pipeline)
-    if not os.path.isfile(pipeline_path):
-        parser.exit('%r is not a file' % pipeline_path)
-    if not os.path.isdir(command.context):
-        parser.exit('%r is not a directory' % command.context)
-    return command
+    command = pmatic.parse_args_and_env(args, parser)
+    engine = pmatic.build_engine_from_namespace(command)
+    engine.run()
 
 
 def build_command_parser():
-    # top-level parser
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('-v', '--verbose', action='store_true')
     parser.add_argument(
         'pipeline',
         help='the name of the pipeline to execute inside $PMATIC_BASE'
@@ -58,28 +46,11 @@ def build_command_parser():
     parser.add_argument(
         'context', help='the directory that defines the context of execution'
     )
-    parser.add_argument('-v', '--verbose', action='store_true')
-    subparsers = parser.add_subparsers()
-    # parser for the "run" command
-    parser_run = subparsers.add_parser('run')
-    parser_run.set_defaults(func=pmatic.PipelineEngine.run)
-    parser_run.add_argument(
+    parser.add_argument(
         '--params', nargs='*', metavar='KEY=VALUE',
         help='optional key=value pairs (use for debugging only)'
     )  # TODO parse params into a dict
-    # parser for the "status" command
-    parser_status = subparsers.add_parser('status')
-    parser_status.set_defaults(func=pmatic.PipelineEngine.status)
     return parser
-
-
-def execute(command):
-    """Construct a PipelineEngine and dispatch to user-function."""
-    engine = pmatic.PipelineEngine(
-        command.pipeline, command.pmatic_base, command.context,
-        command.verbose, command.params
-    )
-    command.func(engine)
 
 
 if __name__ == '__main__':

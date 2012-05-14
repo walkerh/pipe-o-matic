@@ -1,6 +1,6 @@
-#!/usr/bin/env bash
+#!/usr/bin/env python2.7
 
-# Check for code style
+"""Report status of pipeline execution in a particular context (directory)."""
 
 # Author: Walker Hale (hale@bcm.edu), 2012
 #         Human Genome Sequencing Center, Baylor College of Medicine
@@ -20,11 +20,30 @@
 # You should have received a copy of the GNU General Public License
 # along with Pipe-o-matic.  If not, see <http://www.gnu.org/licenses/>.
 
-export TEST_ROOT=$(cd $(dirname "$0"); pwd)
-source "$TEST_ROOT"/lib/test-setup.sh
+import argparse
+import os
+import sys
 
-cd ..
+import pmatic
 
-if [[ $(type -P pep8) ]]; then
-    pep8 bin/pmatic* lib/*.py test/lib/*.py
-fi
+
+def main(args=None):
+    if not args:
+        args = sys.argv[1:]
+    parser = build_command_parser()
+    command = pmatic.parse_args_and_env(args, parser)
+    engine = pmatic.build_engine_from_namespace(command)
+    engine.status()
+
+
+def build_command_parser():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('-v', '--verbose', action='store_true')
+    parser.add_argument(
+        'context', help='the directory that defines the context of execution'
+    )
+    return parser
+
+
+if __name__ == '__main__':
+    main()
