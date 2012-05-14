@@ -23,7 +23,7 @@
 export TEST_ROOT=$(cd $(dirname "$0"); pwd)
 source "$TEST_ROOT"/lib/test-setup.sh
 
-cd ..
+cd "$PROJECT_ROOT"
 
 if [[ $(type -P pep8) ]]; then
     pep8 bin/pmatic* lib/*.py test/lib/*.py

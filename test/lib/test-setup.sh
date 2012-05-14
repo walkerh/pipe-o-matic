@@ -32,6 +32,10 @@ if [[ "$1" == '-v' ]]; then
 else
     export VERBOSE=''
 fi
+if [[ -z "$TEST_ROOT" ]]; then
+    export TEST_ROOT=$(cd test; pwd)
+    echo "WARNING: guessing TEST_ROOT=$TEST_ROOT"
+fi
 export PROJECT_ROOT=$(dirname "$TEST_ROOT")
 export PMATIC_BASE="$TEST_ROOT"/pmatic_base
 

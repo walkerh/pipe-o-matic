@@ -23,6 +23,8 @@
 export TEST_ROOT=$(cd $(dirname "$0"); pwd)
 source "$TEST_ROOT"/lib/test-setup.sh
 
+cd "$TEST_ROOT"  # not strictly necessary
+
 for case_dir in $(ls "$TEST_ROOT"/cases); do
     if [[ "$VERBOSE" ]]; then
         echo $case_dir
