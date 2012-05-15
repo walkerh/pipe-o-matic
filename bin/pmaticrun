@@ -44,7 +44,8 @@ def build_command_parser():
         help='the name of the pipeline to execute inside $PMATIC_BASE'
     )
     parser.add_argument(
-        'context', help='the directory that defines the context of execution'
+        'context_path',
+        help='the directory that defines the context of execution'
     )
     parser.add_argument(
         '--params', nargs='*', metavar='KEY=VALUE',

@@ -42,15 +42,15 @@ def parse_args_and_env(args, parser):
     path = pipeline_path(command.pmatic_base, command.pipeline)
     if not os.path.isfile(path):
         parser.exit('%r is not a file' % path)
-    if not os.path.isdir(command.context):
-        parser.exit('%r is not a directory' % command.context)
+    if not os.path.isdir(command.context_path):
+        parser.exit('%r is not a directory' % command.context_path)
     return command
 
 
 def build_engine_from_namespace(namespace):
     """Construct a PipelineEngine and dispatch to user-function."""
     engine = PipelineEngine(
-        namespace.pipeline, namespace.pmatic_base, namespace.context,
+        namespace.pipeline, namespace.pmatic_base, namespace.context_path,
         namespace.verbose, namespace.params
     )
     return engine
@@ -65,15 +65,15 @@ class PipelineEngine(object):
         Typical values:
         pipeline_name='foo-1',
         pmatic_base='/...pipe-o-matic/test/pmatic_base',
-        context='/.../pipe-o-matic/target/test/case01/execute',
+        context_path='/.../pipe-o-matic/target/test/case01/execute',
         verbose=False,
         params=None
         """
         super(PipelineEngine, self).__init__()
         self.pipeline_name = pipeline_name
         self.pmatic_base = abspath(pmatic_base)
-        self.context = abspath(context_path)
-        self.meta_path = os.path.join(self.context, META_DIR_NAME)
+        self.context_path = abspath(context_path)
+        self.meta_path = os.path.join(self.context_path, META_DIR_NAME)
         self.verbose = verbose
         self.params = params
         self.pipeline = None
@@ -84,7 +84,8 @@ class PipelineEngine(object):
     def run(self):
         """Main starting point. Will attempt to start or restart the
         pipeline."""
-        self.debug('running %(pipeline_name)s in %(context)s', self.__dict__)
+        self.debug('running %(pipeline_name)s in %(context_path)s',
+                   self.__dict__)
         insure_directory_exists(self.meta_path)
         # TODO: Add command-line support for creating context directory.
         self.load_pipeline()
@@ -110,7 +111,7 @@ class PipelineEngine(object):
                 self.dependency_finder, unlisted, missing, bad_type
             )
         namespace = Namespace()
-        os.chdir(self.context)
+        os.chdir(self.context_path)
         self.pipeline.run(self.event_log,  self.dependency_finder, namespace)
 
     def status(self):
