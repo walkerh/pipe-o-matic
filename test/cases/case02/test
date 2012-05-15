@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+
+# Single case test script
+
+# Author: Walker Hale (hale@bcm.edu), 2012
+#         Human Genome Sequencing Center, Baylor College of Medicine
+#
+# This file is part of Pipe-o-matic.
+#
+# Pipe-o-matic is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Pipe-o-matic is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Pipe-o-matic.  If not, see <http://www.gnu.org/licenses/>.
+
+output_path="$1"
+status="$PROJECT_ROOT"/bin/pmaticstatus
+run="$PROJECT_ROOT"/bin/pmaticrun
+# Generate expected results.
+echo never_run >"$output_path"/expect/st1
+echo finished | cat "$output_path"/expect/st1 - >"$output_path"/expect/st2
+
+# Generate pipeline results.
+(  # Use a sub-shell to isolate side-effects.
+    set -e  # Exit upon error.
+    if [[ "$VERBOSE" ]]; then
+        PMATIC_OPTS='-v'
+    fi
+    "$status" $PMATIC_OPTS "$output_path"/execute >"$output_path"/execute/st1
+    "$run" $PMATIC_OPTS bar-1 "$output_path"/execute
+    "$status" $PMATIC_OPTS "$output_path"/execute >"$output_path"/execute/st2
+)
+if [[ $? != 0 ]]; then
+    echo "Error in $0"
+fi
+
+# Compare.
+diff -r "$output_path"/expect "$output_path"/execute | fgrep -v .pmatic

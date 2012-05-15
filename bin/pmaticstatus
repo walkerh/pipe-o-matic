@@ -31,16 +31,18 @@ def main(args=None):
     if not args:
         args = sys.argv[1:]
     parser = build_command_parser()
-    command = pmatic.parse_args_and_env(args, parser)
-    engine = pmatic.build_engine_from_namespace(command)
-    engine.status()
+    command = parser.parse_args(args)
+    if command.verbose:
+        pmatic.print_err('checking status in %s', command.context_path)
+    pass  # TODO
 
 
 def build_command_parser():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('-v', '--verbose', action='store_true')
     parser.add_argument(
-        'context', help='the directory that defines the context of execution'
+        'context_path',
+        help='the directory that defines the context of execution'
     )
     return parser
 
