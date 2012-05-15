@@ -73,7 +73,7 @@ class PipelineEngine(object):
         self.pipeline_name = pipeline_name
         self.pmatic_base = abspath(pmatic_base)
         self.context_path = abspath(context_path)
-        self.meta_path = os.path.join(self.context_path, META_DIR_NAME)
+        self.meta_path = meta_path(self.context_path)
         self.verbose = verbose
         self.params = params
         self.pipeline = None
@@ -359,6 +359,12 @@ def deployment_file_path(pmatic_base):
 def pipeline_path(pmatic_base, pipeline_name):
     """Return the path to the specified pipeline."""
     return os.path.join(pmatic_base, 'pipelines', pipeline_name + '.yaml')
+
+
+def meta_path(context_path):
+    """Return the path to the .pmatic directory inside the context
+    directory."""
+    return os.path.join(context_path, META_DIR_NAME)
 
 
 def abspath(path):
