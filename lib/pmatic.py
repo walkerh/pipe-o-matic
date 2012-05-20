@@ -86,7 +86,7 @@ class PipelineEngine(object):
         pipeline."""
         self.debug('running %(pipeline_name)s in %(context_path)s',
                    self.__dict__)
-        insure_directory_exists(self.meta_path)
+        ensure_directory_exists(self.meta_path)
         # TODO: Add command-line support for creating context directory.
         self.load_pipeline()
         self.event_log.insure_log_exists()
@@ -329,7 +329,7 @@ def exit(code):
     sys.exit(code)
 
 
-def insure_directory_exists(dir_path):
+def ensure_directory_exists(dir_path):
     if not os.path.isdir(dir_path):
         os.mkdir(dir_path)
 
