@@ -18,9 +18,36 @@
 # You should have received a copy of the GNU General Public License
 # along with Pipe-o-matic.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
+import shutil
 import unittest
 
 import pmatic
+
+
+class TestEventLog(unittest.TestCase):
+    def setUp(self):
+        self.test_dir = os.path.join(
+            os.environ['PROJECT_ROOT'], 'target/test/unit/EventLog'
+        )
+        if os.path.isdir(self.test_dir):
+            shutil.rmtree(self.test_dir)
+        os.makedirs(self.test_dir)
+        self.event_log = pmatic.EventLog(self.test_dir)
+        gen = ('00000000-0000-0000-0000-%012d' % i for i in xrange(20)).next
+        self.original_gen = pmatic.gen_uuid_str
+        pmatic.gen_uuid_str = gen
+
+    def tearDown(self):
+        pmatic.gen_uuid_str = self.original_gen
+
+    def test_basic(self):
+        event_log = self.event_log
+        self.assertEqual(event_log.get_status(), 'never_run')
+        event_log.record_pipeline_started('test-pipeline-1')
+        self.assertEqual(event_log.get_status(), 'started')
+        event_log.record_pipeline_finished('test-pipeline-1')
+        self.assertEqual(event_log.get_status(), 'finished')
 
 
 class TestNamespace(unittest.TestCase):

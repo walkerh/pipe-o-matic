@@ -34,7 +34,9 @@ def main(args=None):
     command = parser.parse_args(args)
     if command.verbose:
         pmatic.print_err('checking status in %s', command.context_path)
-    pass  # TODO
+    meta_path = pmatic.meta_path(command.context_path)
+    event_log = pmatic.EventLog(meta_path)
+    print event_log.get_status()
 
 
 def build_command_parser():

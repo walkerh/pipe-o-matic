@@ -21,11 +21,13 @@
 import abc
 import collections
 import contextlib
+from datetime import datetime
 import itertools
 import os
 import string
 import subprocess
 import sys
+import uuid
 
 import yaml
 
@@ -89,15 +91,14 @@ class PipelineEngine(object):
         ensure_directory_exists(self.meta_path)
         # TODO: Add command-line support for creating context directory.
         self.load_pipeline()
-        self.event_log.insure_log_exists()
+        self.event_log.ensure_log_exists()
         self.event_log.read_log()
         current_pipeline = self.event_log.get_current_pipeline_name()
-        if current_pipeline and current_pipeline != self.pipeline_name:
-            fail(
-                'Cannot run, because another pipeline (%r) '
-                + 'is currently running',
-                current_pipeline
-            )
+        current_status = self.event_log.get_status()
+        # TODO: Add support for restart-able (asynchronous) pipelines.
+        if current_status not in ['never_run', 'finished']:
+            fail('Cannot run, because pipeline (%r) has a status of %r',
+                 (current_pipeline, current_status))
         dependencies = self.pipeline.get_dependencies()
         unlisted = set(dependency for dependency in dependencies
                   if not self.dependency_finder.check_listed(dependency))
@@ -114,10 +115,6 @@ class PipelineEngine(object):
         os.chdir(self.context_path)
         self.pipeline.run(self.event_log,  self.dependency_finder, namespace)
 
-    def status(self):
-        """Print to stderr and set exit code if error state."""
-        pass  # TODO
-
     def load_pipeline(self):
         """Load the pipeline designated by self.pipeline_name."""
         self.pipeline = self.pipeline_loader.load_pipeline(self.pipeline_name)
@@ -129,23 +126,123 @@ class PipelineEngine(object):
 
 
 class EventLog(object):
-    """Manages recording a reading of pipeline events."""
+    """Manages recording a reading of pipeline events.
+    Uses a lockfile to achieve atomicity."""
+    # TODO: Start using lockfile.
     def __init__(self, meta_path):
         super(EventLog, self).__init__()
-        self.meta_path = meta_path
-        self.log_data = None
+        self.events_path = os.path.join(meta_path, 'events')
+        self.db_path = os.path.join(self.events_path, 'db')
+        self.new_path = os.path.join(self.events_path, 'new')
+        self.head_path = os.path.join(self.events_path, 'head')
+        self.event_data = None
 
-    def insure_log_exists(self):
+    def record_pipeline_started(self, pipeline_name):
+        """Records start of a pipeline. Raises exception if another pipeline
+        is already running or the last entry in the EventLog was an error."""
+        self.ensure_log_exists()
+        # TODO: Check for previous state.
+        self.post_event(pipeline_name, 'started')
+
+    def record_pipeline_finished(self, pipeline_name):
+        """Records completion of a pipeline. Raises exception unless the
+        immediately previous log entry was "started"."""
+        self.ensure_log_exists()
+        # TODO: Check for previous state.
+        self.post_event(pipeline_name, 'finished')
+
+    def record_pipeline_error(self, pipeline_name):
+        """Records error of a pipeline. Raises exception unless the
+        immediately previous log entry was "started"."""
+        self.ensure_log_exists()
+        # TODO: Check for previous state.
+        self.post_event(pipeline_name, 'error')
+
+    def get_status(self):
+        """Return terse execution status. Possible values:
+        never_run, started, finished, error."""
+        if not self.log_exists:
+            return 'never_run'
+        if not self.event_data:
+            self.read_log()
+        if not self.event_data:
+            return 'never_run'
+        return self.event_data[0].what
+
+    def get_current_pipeline_name(self):
+        if not self.log_exists:
+            return None
+        if not self.event_data:
+            self.read_log()
+        if not self.event_data:
+            return None
+        return self.event_data[0].pipeline_name
+
+    def ensure_log_exists(self):
         """Create empty log inside self.meta_path if it is missing."""
-        pass  # TODO
+        ensure_directory_exists(self.events_path, os.makedirs)
+        ensure_directory_exists(self.db_path)
+        ensure_directory_exists(self.new_path)
 
     def read_log(self):
         """Read or re-read log from disk"""
-        pass  # TODO
+        self.event_data = None
+        if not self.log_exists:
+            return
+        if not os.path.isfile(self.head_path):
+            return
+        event_data = []
+        event_id = load_yaml_file(self.head_path)  # Read log head.
+        while event_id:
+            event = self.read_event(event_id)
+            event_data.append(event)
+            event_id = event.parent_event_id
+        self.event_data = event_data
 
-    def get_current_pipeline_name(self):
-        pass  # TODO
-        # return 'spam'
+    def read_event(self, event_id):
+        """Return specified event data"""
+        event_data = load_yaml_file(
+            os.path.join(self.db_path, event_id + '.yaml')
+        )
+        return Event(**event_data)
+
+    def post_event(self, pipeline_name, what, **kwds):
+        """Store the specified event, and update head."""
+        if self.event_data:
+            parent_event_id = self.event_data[0].id
+        else:
+            parent_event_id = None
+            self.event_data = []
+        event = Event(pipeline_name, what, parent_event_id, **kwds)
+        self.event_data.insert(0, event)
+        event_file_name = event.id + '.yaml'
+        new_event_path = os.path.join(self.new_path, event_file_name)
+        final_event_path = os.path.join(self.db_path, event_file_name)
+        new_head_path = os.path.join(self.new_path, 'head')
+        save_yaml_file(new_event_path, event.__dict__)
+        save_yaml_file(new_head_path, event.id)
+        os.rename(new_event_path, final_event_path)
+        os.rename(new_head_path, self.head_path)
+
+    @property
+    def log_exists(self):
+        """Return True if there is a readable log."""
+        return os.path.isdir(self.db_path)
+
+
+class Event(object):
+    """A single event in the event log"""
+    def __init__(self, pipeline_name, what, parent_event_id, **kwds):
+        super(Event, self).__init__()
+        self.file_type = 'event-1'
+        self.pipeline_name = pipeline_name
+        self.what = what
+        self.parent_event_id = parent_event_id
+        self.when = datetime.utcnow()
+        if kwds:
+            self.__dict__.update(kwds)
+        if not hasattr(self, 'id'):  # TODO: doing this here maybe too eager
+            self.id = gen_uuid_str()
 
 
 class DependencyFinder(object):
@@ -268,27 +365,25 @@ class SingleTaskPipeline(AbstractPipeline):
 
     def run(self, event_log, dependency_finder, namespace):
         """Requirement of AbstractPipeline"""
-        # TODO: record start in event_log
+        executable_path = dependency_finder.path(self.get_dependencies().pop())
+        args = [executable_path]
+        args.extend(self.arguments)
+        event_log.record_pipeline_started(self.pipeline_name)
         try:
             cfin = conditional_file(self.stdin)
             cfout = conditional_file(self.stdout, 'w')
             cferr = conditional_file(self.stderr, 'w')
             with cfin as stdin, cfout as stdout, cferr as stderr:
-                executable_path = dependency_finder.path(
-                    self.get_dependencies().pop()
-                )
-                args = [executable_path]
-                args.extend(self.arguments)
                 proc = subprocess.Popen(
                     args, stdin=stdin, stdout=stdout, stderr=stderr
                 )
                 exit_code = proc.wait()
         except Exception, e:
-            # TODO: record result in event_log
+            event_log.record_pipeline_error(self.pipeline_name,
+                                            exception=str(e))
             raise
         else:
-            # TODO: record result in event_log
-            pass
+            event_log.record_pipeline_finished(self.pipeline_name)
 
 
 def fail_dependencies(dependency_finder, unlisted, missing, bad_type):
@@ -327,15 +422,30 @@ def exit(code):
     sys.exit(code)
 
 
-def ensure_directory_exists(dir_path):
+def gen_uuid_str():
+    """Returns a version 1 UUID. (See RFC 4122.)
+    Nice hook for testing. For testing, you can replace this function
+    by the bound next() method of some iterator. Example:
+    pmatic.gen_uuid_str = iter([uuid1, uuid2, uuid3]).next"""
+    return str(uuid.uuid1())
+
+
+def ensure_directory_exists(dir_path, create_fcn=os.mkdir):
+    """Create the specified directory if it is missing.
+    create_fcn defaults to os.mkdir."""
     if not os.path.isdir(dir_path):
-        os.mkdir(dir_path)
+        create_fcn(dir_path)
 
 
 def load_yaml_file(yaml_file_path):
     """Return YAML data in yaml_file_path."""
     with open(yaml_file_path) as fin:
         return yaml.load(fin)
+
+
+def save_yaml_file(yaml_file_path, data):
+    with open(yaml_file_path, 'w') as fout:
+        yaml.dump(data, fout, default_flow_style=False)
 
 
 @contextlib.contextmanager

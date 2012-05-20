@@ -25,7 +25,8 @@ status="$PROJECT_ROOT"/bin/pmaticstatus
 run="$PROJECT_ROOT"/bin/pmaticrun
 # Generate expected results.
 echo never_run >"$output_path"/expect/st1
-echo finished | cat "$output_path"/expect/st1 - >"$output_path"/expect/st2
+echo finished >"$output_path"/expect/st2
+echo inside bar >"$output_path"/expect/bar.log
 
 # Generate pipeline results.
 (  # Use a sub-shell to isolate side-effects.
