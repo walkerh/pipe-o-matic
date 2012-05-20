@@ -154,8 +154,7 @@ class DependencyFinder(object):
         super(DependencyFinder, self).__init__()
         self.pmatic_base = pmatic_base
         deployments_path = deployment_file_path(pmatic_base)
-        with open(deployments_path) as fin:
-            deployment_data = yaml.load(fin)
+        deployment_data = load_yaml_file(deployments_path)
         file_type = deployment_data.pop('file_type')
         assert file_type == 'deployments-1', 'bad type of ' + deployments_path
         dependency_paths = {}
@@ -215,8 +214,7 @@ class PipelineLoader(object):
 
     def load_pipeline(self, pipeline_name):
         """Return pipeline object."""
-        with open(pipeline_path(self.pmatic_base, pipeline_name)) as fin:
-            data = yaml.load(fin)
+        data = load_yaml_file(pipeline_path(self.pmatic_base, pipeline_name))
         try:
             meta_map = data[0]
         except KeyError:
@@ -332,6 +330,12 @@ def exit(code):
 def ensure_directory_exists(dir_path):
     if not os.path.isdir(dir_path):
         os.mkdir(dir_path)
+
+
+def load_yaml_file(yaml_file_path):
+    """Return YAML data in yaml_file_path."""
+    with open(yaml_file_path) as fin:
+        return yaml.load(fin)
 
 
 @contextlib.contextmanager
