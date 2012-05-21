@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+# Testing jig. This allows us to execute whatever arbitrary executable in
+# the context directory that is named "probe".
+
+(
+    echo 'probe on'
+    ./probe
+    echo 'probe off'
+) >>probe.out 2>>probe.err

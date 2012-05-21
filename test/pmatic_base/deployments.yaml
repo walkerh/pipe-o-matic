@@ -4,3 +4,6 @@ foo:
 
 bar:
     "1.1": ${pmatic_base}/../dummies/bar-1.1/bin/bar
+
+'run-probe':
+    "1.0": ${pmatic_base}/../dummies/run-probe-1.0/bin/run-probe
