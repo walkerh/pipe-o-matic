@@ -26,3 +26,5 @@ source "$TEST_ROOT"/lib/test-setup.sh
 "$TEST_ROOT"/test-style
 "$TEST_ROOT"/test-unit
 "$TEST_ROOT"/test-gray-box
+
+echo 'done'
