@@ -35,5 +35,6 @@ for case_dir in $(ls "$TEST_ROOT"/cases); do
     mkdir -p "$output_path"
     mkdir "$output_path"/execute
     mkdir "$output_path"/expect
+    ln -s .pmatic "$output_path"/execute/pmatic
     PYTHONPATH="$TEST_PYTHONPATH" "$test_case_path"/test "$output_path"
 done
