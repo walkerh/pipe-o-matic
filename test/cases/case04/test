@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+
+# Testing status during pipeline execution
+# Verify that pmaticstatus prints "started" during pipeline execution.
+
+# Author: Walker Hale (hale@bcm.edu), 2012
+#         Human Genome Sequencing Center, Baylor College of Medicine
+#
+# This file is part of Pipe-o-matic.
+#
+# Pipe-o-matic is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Pipe-o-matic is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Pipe-o-matic.  If not, see <http://www.gnu.org/licenses/>.
+
+output_path="$1"
+run="$PROJECT_ROOT"/bin/pmaticrun
+
+# Generate expected results.
+
+cat >"$output_path"/expect/probe <<EOD
+#!/usr/bin/env bash
+"$PROJECT_ROOT"/bin/pmaticstatus .
+EOD
+
+chmod +x "$output_path"/expect/probe
+
+touch "$output_path"/expect/probe.err
+
+cat >"$output_path"/expect/probe.out <<EOD
+probe on
+started
+probe off
+EOD
+
+# Generate pipeline results.
+(  # Use a sub-shell to isolate side-effects.
+    set -e  # Exit upon error.
+    if [[ "$VERBOSE" ]]; then
+        PMATIC_OPTS='-v'
+    fi
+    cp "$output_path"/expect/probe "$output_path"/execute/
+    "$run" $PMATIC_OPTS run-probe-1 "$output_path"/execute
+)
+if [[ $? != 0 ]]; then
+    echo "Error in $0"
+fi
+
+# Compare.
+diff -r -x '*pmatic' "$output_path"/expect "$output_path"/execute
