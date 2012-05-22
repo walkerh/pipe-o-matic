@@ -354,6 +354,7 @@ class SingleTaskPipeline(AbstractPipeline):
         self.stdin = None
         self.stdout = None
         self.stderr = None
+        # TODO: Ensure that stdout and stderr are always directed somewhere.
         self.__dict__.update(data)
         assert self.executable
         assert self.version
