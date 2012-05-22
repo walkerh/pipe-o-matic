@@ -97,7 +97,7 @@ class PipelineEngine(object):
         current_status = self.event_log.get_status()
         # TODO: Add support for restart-able (asynchronous) pipelines.
         if current_status not in ['never_run', 'finished']:
-            fail('Cannot run, because pipeline (%r) has a status of %r',
+            fail('Cannot run, because pipeline %r has a status of %r',
                  (current_pipeline, current_status))
         dependencies = self.pipeline.get_dependencies()
         unlisted = set(dependency for dependency in dependencies
