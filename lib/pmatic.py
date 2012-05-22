@@ -384,7 +384,18 @@ class SingleTaskPipeline(AbstractPipeline):
                                             exception=str(e))
             raise
         else:
-            event_log.record_pipeline_finished(self.pipeline_name)
+            if exit_code == 0:
+                event_log.record_pipeline_finished(self.pipeline_name)
+            else:
+                event_log.record_pipeline_error(self.pipeline_name,
+                                                exit_code=exit_code)
+                raise ExitCodeError(exit_code,
+                                    'exit code from %r' % executable_path)
+
+
+class ExitCodeError(EnvironmentError):
+    """Signals that an external program returned a nonzero exit code."""
+    pass
 
 
 def fail_dependencies(dependency_finder, unlisted, missing, bad_type):
