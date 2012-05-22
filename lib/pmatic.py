@@ -113,7 +113,7 @@ class PipelineEngine(object):
             )
         namespace = Namespace()
         os.chdir(self.context_path)
-        self.pipeline.run(self.event_log,  self.dependency_finder, namespace)
+        self.pipeline.run(self.event_log, self.dependency_finder, namespace)
 
     def load_pipeline(self):
         """Load the pipeline designated by self.pipeline_name."""
