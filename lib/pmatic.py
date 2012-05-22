@@ -151,12 +151,12 @@ class EventLog(object):
         # TODO: Check for previous state.
         self.post_event(pipeline_name, 'finished')
 
-    def record_pipeline_error(self, pipeline_name):
+    def record_pipeline_error(self, pipeline_name, **kwds):
         """Records error of a pipeline. Raises exception unless the
         immediately previous log entry was "started"."""
         self.ensure_log_exists()
         # TODO: Check for previous state.
-        self.post_event(pipeline_name, 'error')
+        self.post_event(pipeline_name, 'error', **kwds)
 
     def get_status(self):
         """Return terse execution status. Possible values:
