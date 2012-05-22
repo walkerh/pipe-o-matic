@@ -6,5 +6,7 @@
 (
     echo 'probe on'
     ./probe
+    err=$?
     echo 'probe off'
+    exit $err
 ) >>probe.out 2>>probe.err
