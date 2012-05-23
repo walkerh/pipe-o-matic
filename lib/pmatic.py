@@ -318,7 +318,8 @@ class PipelineLoader(object):
 
 
 class AbstractPipeline(object):
-    """Abstract base class for all pipeline classes."""
+    """Abstract base class for all pipeline classes.
+    Uses Template Method Pattern."""
     __metaclass__ = abc.ABCMeta
 
     def __init__(self, dependency_finder, event_log,
@@ -341,9 +342,13 @@ class AbstractPipeline(object):
         (dependency, version, dependency_type) triplets."""
         raise NotImplementedError
 
-    @abc.abstractmethod
     def run(self, namespace):
         """Main entry point for a pipeline object."""
+        self.implement_run(namespace)
+
+    @abc.abstractmethod
+    def implement_run(self, namespace):
+        """Implementation hook."""
         raise NotImplementedError
 
 
@@ -369,7 +374,7 @@ class SingleTaskPipeline(AbstractPipeline):
         """Requirement of AbstractPipeline"""
         return set([(self.executable, self.version, 'executable')])
 
-    def run(self, namespace):
+    def implement_run(self, namespace):
         """Requirement of AbstractPipeline"""
         executable_path = self.dependency_finder.path(
             self.get_dependencies().pop()
