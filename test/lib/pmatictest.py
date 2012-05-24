@@ -20,9 +20,70 @@
 
 import os
 import shutil
+import stat
+import sys
 import unittest
 
 import pmatic
+
+
+class TestSingleTaskPipeline(unittest.TestCase):
+    def setUp(self):
+        self.pmatic_base = os.path.join(
+            os.environ['PROJECT_ROOT'], 'test/pmatic_base'
+        )
+        self.dependency_finder = pmatic.DependencyFinder(self.pmatic_base)
+        self.test_dir = os.path.join(
+            os.environ['PROJECT_ROOT'], 'target/test/unit/SingleTaskPipeline'
+        )
+        if os.path.isdir(self.test_dir):
+            shutil.rmtree(self.test_dir)
+        os.makedirs(self.test_dir)
+        self.meta_path = pmatic.meta_path(self.test_dir)
+        self.event_log = pmatic.EventLog(self.meta_path)
+        self.pipeline_loader = pmatic.PipelineLoader(
+            self.pmatic_base, self.dependency_finder, self.event_log
+        )
+        self.original_gen = pmatic.gen_uuid_str
+        gen = ('00000000-0000-0000-0000-%012d' % i for i in xrange(20)).next
+        pmatic.gen_uuid_str = gen
+        self.cwd = os.getcwd()
+        os.chdir(self.test_dir)
+        self.orig_stdout = sys.stdout
+        os.mkdir('foo')
+        sys.stdout = open('foo/out.txt', 'w')
+        write_file('foo/spam', 'hello\nworld!!!')
+        os.symlink('foo/spam', 'eggs')
+
+    def tearDown(self):
+        fout = sys.stdout
+        sys.stdout = self.orig_stdout
+        fout.close()
+        os.chdir(self.cwd)
+        pmatic.gen_uuid_str = self.original_gen
+
+    def test_basic(self):
+        probe = '''#!/usr/bin/env bash
+            echo hello world from probe!!!
+            echo example error >&2'''
+        write_file('probe', probe)
+        os.chmod('probe', os.stat('probe').st_mode | stat.S_IXUSR)
+        pipeline = self.pipeline_loader.load_pipeline('run-probe-1')
+        namespace = pmatic.Namespace()
+        pipeline.run(namespace)
+        scan = pmatic.scan_directory('.', '.pmatic')
+        # For reproducibility, strip inode out of scan.
+        result = {k: (f, m, s, l) for k, (f, m, s, i, l) in scan.iteritems()}
+        self.assertEqual(
+            result,
+            {'eggs': (40960, 493, 8, 'foo/spam'),
+             'foo': (16384, 493, 136, None),
+             'foo/out.txt': (32768, 420, 0, None),
+             'foo/spam': (32768, 420, 15, None),
+             'probe': (32768, 484, 74, None),
+             'probe.err': (32768, 420, 14, None),
+             'probe.out': (32768, 420, 45, None)}
+        )
 
 
 class TestEventLog(unittest.TestCase):
@@ -48,6 +109,58 @@ class TestEventLog(unittest.TestCase):
         self.assertEqual(event_log.get_status(), 'started')
         event_log.record_pipeline_finished('test-pipeline-1')
         self.assertEqual(event_log.get_status(), 'finished')
+
+
+def write_file(file_path, payload):
+    """Convenience method, mainly for writing triple-quoted strings
+    that are indented."""
+    lines = payload.split('\n')
+    dedented_lines = get_dedented_lines(lines)
+    with open(file_path, 'w') as fout:
+        for line in dedented_lines:
+            fout.write(line)
+            fout.write('\n')
+
+
+def get_dedented_lines(lines):
+    """Return list of dedented lines"""
+    result = []
+    first_line_indented, block_value = get_block_indentation(lines)
+    if first_line_indented:
+        result.append(lines[0][block_value:])
+    else:
+        result.append(lines[0])
+    result.extend(line[block_value:] for line in lines[1:])
+    return result
+
+
+def get_block_indentation(lines):
+    """Return amount of first nonzero indentation"""
+    first_line_value = get_indentation(lines[0])
+    if first_line_value:
+        first_line_indented = True
+        block_value = first_line_value
+    else:
+        first_line_indented = False
+        remainder = lines[1:]
+        if remainder:
+            indentations = (get_indentation(line) for line in remainder)
+            real_indents = (i for i in indentations if i is not None)
+            block_value = min(real_indents)
+        else:
+            block_value = 0
+    return first_line_indented, block_value
+
+
+def get_indentation(line):
+    """Return the number of spaces at the start of line. (1 tab = 8 spaces.)
+    Returning None for empty lines."""
+    t = line.expandtabs().rstrip()
+    if t:
+        result = len(t) - len(t.lstrip())
+    else:
+        result = None
+    return result
 
 
 class TestNamespace(unittest.TestCase):
