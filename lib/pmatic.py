@@ -73,8 +73,8 @@ class PipelineEngine(object):
         self.verbose = verbose
         self.params = params
         self.pipeline_loader = PipelineLoader(pmatic_base)
-        self.event_log = EventLog(self.meta_path)
         self.dependency_finder = DependencyFinder(pmatic_base)
+        self.event_log = EventLog(self.meta_path)
 
     def run(self, pipeline_name):
         """Main starting point. Will attempt to start or restart the
