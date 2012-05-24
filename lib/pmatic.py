@@ -352,13 +352,13 @@ class SingleTaskPipeline(AbstractPipeline):
         self.version = None
         self.arguments = []
         self.stdin = None
+        # TODO: If stdin is not redirected, connect to os.devnull
         self.stdout = None
         self.stderr = None
         # TODO: Ensure that stdout and stderr are always directed somewhere.
         self.__dict__.update(data)
         assert self.executable
         assert self.version
-        pass  # TODO
 
     def get_dependencies(self):
         """Requirement of AbstractPipeline"""
