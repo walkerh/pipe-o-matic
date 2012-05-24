@@ -72,9 +72,11 @@ class PipelineEngine(object):
         self.meta_path = meta_path(self.context_path)
         self.verbose = verbose
         self.params = params
-        self.pipeline_loader = PipelineLoader(pmatic_base)
         self.dependency_finder = DependencyFinder(pmatic_base)
         self.event_log = EventLog(self.meta_path)
+        self.pipeline_loader = PipelineLoader(
+            pmatic_base, self.dependency_finder, self.event_log
+        )
 
     def run(self, pipeline_name):
         """Main starting point. Will attempt to start or restart the
@@ -105,7 +107,7 @@ class PipelineEngine(object):
             )
         namespace = Namespace()
         os.chdir(self.context_path)
-        pipeline.run(self.event_log, self.dependency_finder, namespace)
+        pipeline.run(namespace)
 
     def debug(self, message='', *args):
         """Format and print to stderr if verbose."""
@@ -293,9 +295,11 @@ class DependencyFinder(object):
 class PipelineLoader(object):
     """Maintains a registry of Pipeline classes and constructs pipelines from
     files."""
-    def __init__(self, pmatic_base):
+    def __init__(self, pmatic_base, dependency_finder, event_log):
         super(PipelineLoader, self).__init__()
         self.pmatic_base = pmatic_base
+        self.dependency_finder = dependency_finder
+        self.event_log = event_log
 
     def load_pipeline(self, pipeline_name):
         """Return pipeline object."""
@@ -308,15 +312,28 @@ class PipelineLoader(object):
         pipeline_class_name, version = file_type.rsplit('-', 1)
         # TODO: Select class based on pipeline_class_name
         klass = SingleTaskPipeline
-        return klass(version, data, pipeline_name)
+        pipeline = klass(self.dependency_finder, self.event_log,
+                         pipeline_name, version, data)
+        return pipeline
 
 
 class AbstractPipeline(object):
     """Abstract base class for all pipeline classes."""
     __metaclass__ = abc.ABCMeta
 
-    def __init__(self):
+    def __init__(self, dependency_finder, event_log,
+                 pipeline_name, version, data):
         super(AbstractPipeline, self).__init__()
+        self.dependency_finder = dependency_finder
+        self.event_log = event_log
+        self.pipeline_name = pipeline_name
+        self.version = version
+        self.load(data)
+
+    @abc.abstractmethod
+    def load(self, pipeline_name, version, data):
+        """Deserialize pipeline data."""
+        raise NotImplementedError
 
     @abc.abstractmethod
     def get_dependencies(self):
@@ -325,19 +342,19 @@ class AbstractPipeline(object):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def run(self, event_log, dependency_finder, namespace):
+    def run(self, namespace):
         """Main entry point for a pipeline object."""
         raise NotImplementedError
 
 
 class SingleTaskPipeline(AbstractPipeline):
     """Pipelines that wrap just one executable."""
-    def __init__(self, version, data, pipeline_name=None):
-        super(SingleTaskPipeline, self).__init__()
-        assert version == '1', 'SingleTaskPipeline currently only version 1'
-        self.pipeline_name = pipeline_name
+    def load(self, data):
+        """Requirement of AbstractPipeline"""
+        assert self.version == '1', (
+            'SingleTaskPipeline currently only version 1'
+        )
         self.executable = None
-        self.version = None
         self.arguments = []
         self.stdin = None
         # TODO: If stdin is not redirected, connect to os.devnull
@@ -352,12 +369,14 @@ class SingleTaskPipeline(AbstractPipeline):
         """Requirement of AbstractPipeline"""
         return set([(self.executable, self.version, 'executable')])
 
-    def run(self, event_log, dependency_finder, namespace):
+    def run(self, namespace):
         """Requirement of AbstractPipeline"""
-        executable_path = dependency_finder.path(self.get_dependencies().pop())
+        executable_path = self.dependency_finder.path(
+            self.get_dependencies().pop()
+        )
         args = [executable_path]
         args.extend(self.arguments)
-        event_log.record_pipeline_started(self.pipeline_name)
+        self.event_log.record_pipeline_started(self.pipeline_name)
         try:
             cfin = conditional_file(self.stdin)
             cfout = conditional_file(self.stdout, 'w')
@@ -368,15 +387,15 @@ class SingleTaskPipeline(AbstractPipeline):
                 )
                 exit_code = proc.wait()
         except Exception, e:
-            event_log.record_pipeline_error(self.pipeline_name,
-                                            exception=str(e))
+            self.event_log.record_pipeline_error(self.pipeline_name,
+                                                 exception=str(e))
             raise
         else:
             if exit_code == 0:
-                event_log.record_pipeline_finished(self.pipeline_name)
+                self.event_log.record_pipeline_finished(self.pipeline_name)
             else:
-                event_log.record_pipeline_error(self.pipeline_name,
-                                                exit_code=exit_code)
+                self.event_log.record_pipeline_error(self.pipeline_name,
+                                                     exit_code=exit_code)
                 raise ExitCodeError(exit_code,
                                     'exit code from %r' % executable_path)
 
