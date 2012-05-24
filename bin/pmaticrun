@@ -34,7 +34,7 @@ def main(args=None):
     command = pmatic.parse_args_and_env(args, parser)
     engine = pmatic.build_engine_from_namespace(command)
     try:
-        engine.run()
+        engine.run(command.pipeline)
     except EnvironmentError, e:
         print >>sys.stderr, str(e)
         sys.exit(e.errno)

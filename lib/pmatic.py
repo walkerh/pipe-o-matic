@@ -51,18 +51,13 @@ def parse_args_and_env(args, parser):
 
 def build_engine_from_namespace(namespace):
     """Construct a PipelineEngine and dispatch to user-function."""
-    engine = PipelineEngine(
-        namespace.pipeline, namespace.pmatic_base, namespace.context_path,
-        namespace.verbose, namespace.params
-    )
+    engine = PipelineEngine(namespace.pmatic_base, namespace.context_path,
+                            namespace.verbose, namespace.params)
     return engine
 
 
 class PipelineEngine(object):
-    def __init__(
-            self, pipeline_name, pmatic_base, context_path,
-            verbose=False, params=None
-        ):
+    def __init__(self, pmatic_base, context_path, verbose=False, params=None):
         """command is a Namespace from parsing the command line.
         Typical values:
         pipeline_name='foo-1',
@@ -72,7 +67,6 @@ class PipelineEngine(object):
         params=None
         """
         super(PipelineEngine, self).__init__()
-        self.pipeline_name = pipeline_name
         self.pmatic_base = abspath(pmatic_base)
         self.context_path = abspath(context_path)
         self.meta_path = meta_path(self.context_path)
@@ -83,14 +77,13 @@ class PipelineEngine(object):
         self.event_log = EventLog(self.meta_path)
         self.dependency_finder = DependencyFinder(pmatic_base)
 
-    def run(self):
+    def run(self, pipeline_name):
         """Main starting point. Will attempt to start or restart the
         pipeline."""
-        self.debug('running %(pipeline_name)s in %(context_path)s',
-                   self.__dict__)
+        self.debug('running %s in %s', pipeline_name, self.context_path)
         ensure_directory_exists(self.meta_path)
         # TODO: Add command-line support for creating context directory.
-        self.load_pipeline()
+        self.load_pipeline(pipeline_name)
         self.event_log.ensure_log_exists()
         self.event_log.read_log()
         current_pipeline = self.event_log.get_current_pipeline_name()
@@ -115,9 +108,9 @@ class PipelineEngine(object):
         os.chdir(self.context_path)
         self.pipeline.run(self.event_log, self.dependency_finder, namespace)
 
-    def load_pipeline(self):
-        """Load the pipeline designated by self.pipeline_name."""
-        self.pipeline = self.pipeline_loader.load_pipeline(self.pipeline_name)
+    def load_pipeline(self, pipeline_name):
+        """Load the pipeline designated by pipeline_name."""
+        self.pipeline = self.pipeline_loader.load_pipeline(pipeline_name)
 
     def debug(self, message='', *args):
         """Format and print to stderr if verbose."""
