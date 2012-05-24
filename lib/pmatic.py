@@ -72,7 +72,6 @@ class PipelineEngine(object):
         self.meta_path = meta_path(self.context_path)
         self.verbose = verbose
         self.params = params
-        self.pipeline = None
         self.pipeline_loader = PipelineLoader(pmatic_base)
         self.event_log = EventLog(self.meta_path)
         self.dependency_finder = DependencyFinder(pmatic_base)
@@ -83,7 +82,7 @@ class PipelineEngine(object):
         self.debug('running %s in %s', pipeline_name, self.context_path)
         ensure_directory_exists(self.meta_path)
         # TODO: Add command-line support for creating context directory.
-        self.pipeline = self.pipeline_loader.load_pipeline(pipeline_name)
+        pipeline = self.pipeline_loader.load_pipeline(pipeline_name)
         self.event_log.ensure_log_exists()
         self.event_log.read_log()
         current_pipeline = self.event_log.get_current_pipeline_name()
@@ -92,7 +91,7 @@ class PipelineEngine(object):
         if current_status not in ['never_run', 'finished']:
             fail('Cannot run, because pipeline %r has a status of %r',
                  (current_pipeline, current_status))
-        dependencies = self.pipeline.get_dependencies()
+        dependencies = pipeline.get_dependencies()
         unlisted = set(dependency for dependency in dependencies
                   if not self.dependency_finder.check_listed(dependency))
         missing = set(dependency for dependency in (dependencies - unlisted)
@@ -106,7 +105,7 @@ class PipelineEngine(object):
             )
         namespace = Namespace()
         os.chdir(self.context_path)
-        self.pipeline.run(self.event_log, self.dependency_finder, namespace)
+        pipeline.run(self.event_log, self.dependency_finder, namespace)
 
     def debug(self, message='', *args):
         """Format and print to stderr if verbose."""
