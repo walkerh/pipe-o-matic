@@ -351,6 +351,15 @@ class AbstractPipeline(object):
         """Implementation hook."""
         raise NotImplementedError
 
+    def record_pipeline_started(self, **kwds):
+        self.event_log.record_pipeline_started(self.pipeline_name, **kwds)
+
+    def record_pipeline_error(self, **kwds):
+        self.event_log.record_pipeline_error(self.pipeline_name, **kwds)
+
+    def record_pipeline_finished(self, **kwds):
+        self.event_log.record_pipeline_finished(self.pipeline_name, **kwds)
+
 
 class SingleTaskPipeline(AbstractPipeline):
     """Pipelines that wrap just one executable."""
@@ -381,7 +390,7 @@ class SingleTaskPipeline(AbstractPipeline):
         )
         args = [executable_path]
         args.extend(self.arguments)
-        self.event_log.record_pipeline_started(self.pipeline_name)
+        self.record_pipeline_started()
         try:
             cfin = conditional_file(self.stdin)
             cfout = conditional_file(self.stdout, 'w')
@@ -392,15 +401,13 @@ class SingleTaskPipeline(AbstractPipeline):
                 )
                 exit_code = proc.wait()
         except Exception, e:
-            self.event_log.record_pipeline_error(self.pipeline_name,
-                                                 exception=str(e))
+            self.record_pipeline_error(exception=str(e))
             raise
         else:
             if exit_code == 0:
-                self.event_log.record_pipeline_finished(self.pipeline_name)
+                self.record_pipeline_finished()
             else:
-                self.event_log.record_pipeline_error(self.pipeline_name,
-                                                     exit_code=exit_code)
+                self.record_pipeline_error(exit_code=exit_code)
                 raise ExitCodeError(exit_code,
                                     'exit code from %r' % executable_path)
 
