@@ -345,6 +345,9 @@ class AbstractPipeline(object):
 
     def run(self, namespace):
         """Main entry point for a pipeline object."""
+        self.before_snapshot = scan_directory('.', '.pmatic')
+        # TODO: hard link "backups" of files and fifos
+        # TODO: make all regular files read-only
         self.implement_run(namespace)
 
     @abc.abstractmethod
@@ -353,7 +356,9 @@ class AbstractPipeline(object):
         raise NotImplementedError
 
     def record_pipeline_started(self, **kwds):
-        self.event_log.record_pipeline_started(self.pipeline_name, **kwds)
+        self.event_log.record_pipeline_started(
+            self.pipeline_name, snapshot=self.before_snapshot, **kwds
+        )
 
     def record_pipeline_error(self, **kwds):
         self.event_log.record_pipeline_error(self.pipeline_name, **kwds)
@@ -391,8 +396,7 @@ class SingleTaskPipeline(AbstractPipeline):
         )
         args = [executable_path]
         args.extend(self.arguments)
-        scan = scan_directory('.', '.pmatic')
-        self.record_pipeline_started(snapshot=scan)
+        self.record_pipeline_started()
         try:
             cfin = conditional_file(self.stdin)
             cfout = conditional_file(self.stdout, 'w')
