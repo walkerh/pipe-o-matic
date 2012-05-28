@@ -128,19 +128,19 @@ class EventLog(object):
         self.head_path = os.path.join(self.events_path, 'head')
         self.event_data = None
 
-    def record_pipeline_started(self, pipeline_name):
+    def record_pipeline_started(self, pipeline_name, **kwds):
         """Records start of a pipeline. Raises exception if another pipeline
         is already running or the last entry in the EventLog was an error."""
         self.ensure_log_exists()
         # TODO: Check for previous state.
-        self.post_event(pipeline_name, 'started')
+        self.post_event(pipeline_name, 'started', **kwds)
 
-    def record_pipeline_finished(self, pipeline_name):
+    def record_pipeline_finished(self, pipeline_name, **kwds):
         """Records completion of a pipeline. Raises exception unless the
         immediately previous log entry was "started"."""
         self.ensure_log_exists()
         # TODO: Check for previous state.
-        self.post_event(pipeline_name, 'finished')
+        self.post_event(pipeline_name, 'finished', **kwds)
 
     def record_pipeline_error(self, pipeline_name, **kwds):
         """Records error of a pipeline. Raises exception unless the
