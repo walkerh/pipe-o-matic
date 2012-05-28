@@ -391,7 +391,8 @@ class SingleTaskPipeline(AbstractPipeline):
         )
         args = [executable_path]
         args.extend(self.arguments)
-        self.record_pipeline_started()
+        scan = scan_directory('.', '.pmatic')
+        self.record_pipeline_started(snapshot=scan)
         try:
             cfin = conditional_file(self.stdin)
             cfout = conditional_file(self.stdout, 'w')
