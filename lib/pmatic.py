@@ -512,7 +512,8 @@ def load_yaml_file(yaml_file_path):
 
 def save_yaml_file(yaml_file_path, data):
     with open(yaml_file_path, 'w') as fout:
-        yaml.dump(data, fout, default_flow_style=False)
+        # Use safe_dump to supress non-standard tags:
+        yaml.safe_dump(data, fout, default_flow_style=False)
 
 
 @contextlib.contextmanager
