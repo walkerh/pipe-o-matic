@@ -24,6 +24,7 @@ import contextlib
 from datetime import datetime
 import itertools
 import os
+import stat
 import string
 import subprocess
 import sys
@@ -415,6 +416,41 @@ class SingleTaskPipeline(AbstractPipeline):
 class ExitCodeError(EnvironmentError):
     """Signals that an external program returned a nonzero exit code."""
     pass
+
+
+def scan_directory(start_path, *exclude_paths):
+    """Return dict path:(format, mode, size, inode, symlink)"""
+    result = {}
+    for dir_path, dir_names, file_names in os.walk(start_path):
+        remove_dir_names = []
+        for dir_name in dir_names:
+            key, format, mode, size, inode, symlink = stat_item(
+                dir_name, dir_path, start_path
+            )
+            if key in exclude_paths:
+                remove_dir_names.append(dir_name)
+                continue
+            result[key] = format, mode, size, inode, None
+        for dir_name in remove_dir_names:
+            dir_names.remove(dir_name)
+        for file_name in file_names:
+            key, format, mode, size, inode, symlink = stat_item(
+                file_name, dir_path, start_path
+            )
+            result[key] = format, mode, size, inode, symlink
+    return result
+
+
+def stat_item(file_name, dir_path, base_path):
+    path = os.path.join(dir_path, file_name)
+    st = os.lstat(path)
+    format = stat.S_IFMT(st.st_mode)
+    mode = stat.S_IMODE(st.st_mode)
+    size = st.st_size
+    inode = st.st_ino
+    symlink = os.readlink(path) if stat.S_ISLNK(format) else None
+    key = os.path.relpath(path, base_path)
+    return key, format, mode, size, inode, symlink
 
 
 def fail_dependencies(dependency_finder, unlisted, missing, bad_type):
