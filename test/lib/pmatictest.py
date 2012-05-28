@@ -29,6 +29,7 @@ import pmatic
 
 class TestSingleTaskPipeline(unittest.TestCase):
     def setUp(self):
+        self.uuid_mocker = GenUuidStrMocker()
         self.pmatic_base = os.path.join(
             os.environ['PROJECT_ROOT'], 'test/pmatic_base'
         )
@@ -39,9 +40,6 @@ class TestSingleTaskPipeline(unittest.TestCase):
         self.pipeline_loader = pmatic.PipelineLoader(
             self.pmatic_base, self.dependency_finder, self.event_log
         )
-        self.original_gen = pmatic.gen_uuid_str
-        gen = ('00000000-0000-0000-0000-%012d' % i for i in xrange(20)).next
-        pmatic.gen_uuid_str = gen
         self.cwd = os.getcwd()
         os.chdir(self.test_dir)
         self.orig_stdout = sys.stdout
@@ -55,7 +53,7 @@ class TestSingleTaskPipeline(unittest.TestCase):
         sys.stdout = self.orig_stdout
         fout.close()
         os.chdir(self.cwd)
-        pmatic.gen_uuid_str = self.original_gen
+        self.uuid_mocker.close()
 
     def test_basic(self):
         probe = '''#!/usr/bin/env bash
@@ -83,14 +81,12 @@ class TestSingleTaskPipeline(unittest.TestCase):
 
 class TestEventLog(unittest.TestCase):
     def setUp(self):
+        self.uuid_mocker = GenUuidStrMocker()
         self.test_dir = make_test_dir('EventLog')
         self.event_log = pmatic.EventLog(self.test_dir)
-        gen = ('00000000-0000-0000-0000-%012d' % i for i in xrange(20)).next
-        self.original_gen = pmatic.gen_uuid_str
-        pmatic.gen_uuid_str = gen
 
     def tearDown(self):
-        pmatic.gen_uuid_str = self.original_gen
+        self.uuid_mocker.close()
 
     def test_basic(self):
         event_log = self.event_log
@@ -99,6 +95,19 @@ class TestEventLog(unittest.TestCase):
         self.assertEqual(event_log.get_status(), 'started')
         event_log.record_pipeline_finished('test-pipeline-1')
         self.assertEqual(event_log.get_status(), 'finished')
+
+
+class GenUuidStrMocker(object):
+    """During construction, will replace pmatic.gen_uuid_str with a mock.
+    Restores original function during close."""
+    def __init__(self):
+        self.original_gen = pmatic.gen_uuid_str
+        gen = ('00000000-0000-0000-0000-%012d' % i for i in xrange(20)).next
+        pmatic.gen_uuid_str = gen
+
+    def close(self):
+        """Restore original value to pmatic.gen_uuid_str."""
+        pmatic.gen_uuid_str = self.original_gen
 
 
 def make_test_dir(test_dir_name):
