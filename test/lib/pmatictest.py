@@ -33,12 +33,7 @@ class TestSingleTaskPipeline(unittest.TestCase):
             os.environ['PROJECT_ROOT'], 'test/pmatic_base'
         )
         self.dependency_finder = pmatic.DependencyFinder(self.pmatic_base)
-        self.test_dir = os.path.join(
-            os.environ['PROJECT_ROOT'], 'target/test/unit/SingleTaskPipeline'
-        )
-        if os.path.isdir(self.test_dir):
-            shutil.rmtree(self.test_dir)
-        os.makedirs(self.test_dir)
+        self.test_dir = make_test_dir('SingleTaskPipeline')
         self.meta_path = pmatic.meta_path(self.test_dir)
         self.event_log = pmatic.EventLog(self.meta_path)
         self.pipeline_loader = pmatic.PipelineLoader(
@@ -88,12 +83,7 @@ class TestSingleTaskPipeline(unittest.TestCase):
 
 class TestEventLog(unittest.TestCase):
     def setUp(self):
-        self.test_dir = os.path.join(
-            os.environ['PROJECT_ROOT'], 'target/test/unit/EventLog'
-        )
-        if os.path.isdir(self.test_dir):
-            shutil.rmtree(self.test_dir)
-        os.makedirs(self.test_dir)
+        self.test_dir = make_test_dir('EventLog')
         self.event_log = pmatic.EventLog(self.test_dir)
         gen = ('00000000-0000-0000-0000-%012d' % i for i in xrange(20)).next
         self.original_gen = pmatic.gen_uuid_str
@@ -109,6 +99,18 @@ class TestEventLog(unittest.TestCase):
         self.assertEqual(event_log.get_status(), 'started')
         event_log.record_pipeline_finished('test-pipeline-1')
         self.assertEqual(event_log.get_status(), 'finished')
+
+
+def make_test_dir(test_dir_name):
+    """Compute test_dir_path from test_dir_name. Recursively delete
+    test_dir_path if it exists, then create it. Return test_dir_path."""
+    test_dir_path = os.path.join(
+        os.environ['PROJECT_ROOT'], 'target/test/unit', test_dir_name
+    )
+    if os.path.isdir(test_dir_path):
+        shutil.rmtree(test_dir_path)
+    os.makedirs(test_dir_path)
+    return test_dir_path
 
 
 def write_file(file_path, payload):
