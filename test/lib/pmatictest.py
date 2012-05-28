@@ -69,13 +69,13 @@ class TestSingleTaskPipeline(unittest.TestCase):
         result = {k: (f, m, s, l) for k, (f, m, s, i, l) in scan.iteritems()}
         self.assertEqual(
             result,
-            {'eggs': (40960, 493, 8, 'foo/spam'),
-             'foo': (16384, 493, 136, None),
-             'foo/out.txt': (32768, 420, 0, None),
-             'foo/spam': (32768, 420, 15, None),
-             'probe': (32768, 484, 74, None),
-             'probe.err': (32768, 420, 14, None),
-             'probe.out': (32768, 420, 45, None)}
+            {'eggs': ('LNK', 493, 8, 'foo/spam'),
+             'foo': ('DIR', 493, 136, None),
+             'foo/out.txt': ('REG', 420, 0, None),
+             'foo/spam': ('REG', 420, 15, None),
+             'probe': ('REG', 484, 74, None),
+             'probe.err': ('REG', 420, 14, None),
+             'probe.out': ('REG', 420, 45, None)}
         )
 
 

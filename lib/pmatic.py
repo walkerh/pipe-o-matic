@@ -34,6 +34,10 @@ import yaml
 
 
 META_DIR_NAME = '.pmatic'
+STAT_TESTS = [
+    (getattr(stat, 'S_IS' + name), name)
+    for name in 'BLK CHR DIR FIFO LNK REG SOCK'.split()
+]
 
 
 def parse_args_and_env(args, parser):
@@ -449,13 +453,24 @@ def scan_directory(start_path, *exclude_paths):
 def stat_item(file_name, dir_path, base_path):
     path = os.path.join(dir_path, file_name)
     st = os.lstat(path)
-    format = stat.S_IFMT(st.st_mode)
+    format_code = stat.S_IFMT(st.st_mode)
+    format = decode_format(format_code)
     mode = stat.S_IMODE(st.st_mode)
     size = st.st_size
     inode = st.st_ino
-    symlink = os.readlink(path) if stat.S_ISLNK(format) else None
+    symlink = os.readlink(path) if format == 'LNK' else None
     key = os.path.relpath(path, base_path)
     return key, format, mode, size, inode, symlink
+
+
+def decode_format(format_code):
+    format = None
+    for test, name in STAT_TESTS:
+        if test(format_code):
+            assert format is None, 'A file can only have one type.'
+            format = name
+    assert format
+    return format
 
 
 def fail_dependencies(dependency_finder, unlisted, missing, bad_type):
