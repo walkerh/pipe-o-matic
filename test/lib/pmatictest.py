@@ -44,7 +44,7 @@ class TestSingleTaskPipeline(unittest.TestCase):
         os.chdir(self.test_dir)
         self.orig_stdout = sys.stdout
         os.mkdir('foo')
-        sys.stdout = open('foo/out.txt', 'w')
+        sys.stdout = open('foo/out.txt', 'w')  # capture any diagnostic prints
         write_file('foo/spam', 'hello\nworld!!!')
         os.symlink('foo/spam', 'eggs')
 
