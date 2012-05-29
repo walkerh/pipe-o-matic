@@ -480,11 +480,11 @@ def stat_item(file_name, dir_path, base_path):
 
 def decode_format(format_code):
     format = None
-    for test, name in STAT_TESTS:
-        if test(format_code):
+    for test_fcn, name in STAT_TESTS:
+        if test_fcn(format_code):
             assert format is None, 'A file can only have one type.'
             format = name
-    assert format
+    assert format, 'A filesystem object must have some type'
     return format
 
 
