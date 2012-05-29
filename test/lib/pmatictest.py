@@ -29,6 +29,7 @@ import pmatic
 
 class TestSingleTaskPipeline(unittest.TestCase):
     def setUp(self):
+        self.umask = os.umask(022)
         self.uuid_mocker = GenUuidStrMocker()
         self.pmatic_base = os.path.join(
             os.environ['PROJECT_ROOT'], 'test/pmatic_base'
@@ -54,6 +55,7 @@ class TestSingleTaskPipeline(unittest.TestCase):
         fout.close()
         os.chdir(self.cwd)
         self.uuid_mocker.close()
+        os.umask(self.umask)
 
     def test_basic(self):
         probe = '''#!/usr/bin/env bash
