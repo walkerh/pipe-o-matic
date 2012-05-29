@@ -68,14 +68,14 @@ class TestSingleTaskPipeline(unittest.TestCase):
         # For reproducibility, strip inode out of scan.
         result = {k: (f, m, s, l) for k, (f, m, s, i, l) in scan.iteritems()}
         self.assertEqual(
-            result,
-            {'eggs': ('LNK', 493, 8, 'foo/spam'),
-             'foo': ('DIR', 493, 136, None),
-             'foo/out.txt': ('REG', 420, 0, None),
-             'foo/spam': ('REG', 420, 15, None),
-             'probe': ('REG', 484, 74, None),
-             'probe.err': ('REG', 420, 14, None),
-             'probe.out': ('REG', 420, 45, None)}
+            result,  # TODO: portability concerns...
+            {'eggs':        ('LNK', 0755,   8L, 'foo/spam'),
+             'foo':         ('DIR', 0755, 136L, None),
+             'foo/out.txt': ('REG', 0444,   0L, None),
+             'foo/spam':    ('REG', 0444,  15L, None),
+             'probe':       ('REG', 0544,  74L, None),
+             'probe.err':   ('REG', 0644,  14L, None),
+             'probe.out':   ('REG', 0644,  45L, None)}
         )
 
 
