@@ -349,24 +349,7 @@ class AbstractPipeline(object):
 
     def run(self, namespace):
         """Main entry point for a pipeline object."""
-        self.before_snapshot = scan_directory('.', '.pmatic')
-        # Make hard link "backups" of all but symlinks and directories.
-        inode_dir = os.path.join(meta_path('.'), 'inode_snapshots')
-        ensure_directory_exists(inode_dir, os.makedirs)
-        for key, record in self.before_snapshot.iteritems():
-            assert os.path.exists(key)
-            format, mode, size, inode, symlink = record
-            if format not in ('DIR', 'LNK'):
-                inode_file = os.path.join(inode_dir, str(inode))
-                if os.path.exists(inode_file):
-                    if not os.path.samefile(key, inode_file):
-                        os.remove(inode_file)
-                if not os.path.exists(inode_file):
-                    os.link(key, inode_file)
-            if format == 'REG':
-                # Make all regular files read-only.
-                new_mode = mode & 07555  # TODO: may not be portable
-                os.chmod(key, new_mode)
+        self.before_snapshot = create_snapshot()
         self.implement_run(namespace)
 
     @abc.abstractmethod
@@ -440,6 +423,29 @@ class SingleTaskPipeline(AbstractPipeline):
 class ExitCodeError(EnvironmentError):
     """Signals that an external program returned a nonzero exit code."""
     pass
+
+
+def create_snapshot():
+    """Prepare to restore the state of the working directory later: Make hard
+    link "backups" of all but symlinks and directories. Make all regular files
+    read-only. Return the dict returned by scan_directory"""
+    result = scan_directory('.', '.pmatic')
+    inode_dir = os.path.join(meta_path('.'), 'inode_snapshots')
+    ensure_directory_exists(inode_dir, os.makedirs)
+    for key, record in result.iteritems():
+        assert os.path.exists(key)
+        format, mode, size, inode, symlink = record
+        if format not in ('DIR', 'LNK'):
+            inode_file = os.path.join(inode_dir, str(inode))
+            if os.path.exists(inode_file):
+                if not os.path.samefile(key, inode_file):
+                    os.remove(inode_file)
+            if not os.path.exists(inode_file):
+                os.link(key, inode_file)
+        if format == 'REG':
+            new_mode = mode & 07555  # TODO: may not be portable
+            os.chmod(key, new_mode)
+    return result
 
 
 def scan_directory(start_path, *exclude_paths):
