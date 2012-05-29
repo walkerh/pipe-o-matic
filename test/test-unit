@@ -25,4 +25,4 @@ umask 0022
 export TEST_ROOT=$(cd $(dirname "$0"); pwd)
 source "$TEST_ROOT"/lib/test-setup.sh
 
-PYTHONPATH="$TEST_PYTHONPATH" python -m unittest pmatictest
+PYTHONPATH="$TEST_PYTHONPATH" python2.7 -m unittest pmatictest
