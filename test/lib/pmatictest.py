@@ -28,6 +28,11 @@ import pmatic
 
 
 class TestSingleTaskPipeline(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # Nuke and re-create directory for entire class first.
+        make_test_dir('SingleTaskPipeline')
+
     def setUp(self):
         self.umask = os.umask(022)
         self.uuid_mocker = GenUuidStrMocker()
