@@ -48,6 +48,7 @@ class TestSingleTaskPipeline(unittest.TestCase):
         sys.stdout = open('foo/out.txt', 'w')  # capture any diagnostic prints
         write_file('foo/spam', 'hello\nworld!!!')
         os.symlink('foo/spam', 'eggs')
+        os.lchmod('eggs', 00777)
 
     def tearDown(self):
         fout = sys.stdout
@@ -74,7 +75,7 @@ class TestSingleTaskPipeline(unittest.TestCase):
         }
         self.assertEqual(
             result,  # TODO: minor portability concerns...
-            {'eggs':        ('LNK', 0755,  8L, 'foo/spam'),
+            {'eggs':        ('LNK', 0777,  8L, 'foo/spam'),
              'foo':         ('DIR', 0755,  0L, None),
              'foo/out.txt': ('REG', 0444,  0L, None),
              'foo/spam':    ('REG', 0444, 15L, None),
