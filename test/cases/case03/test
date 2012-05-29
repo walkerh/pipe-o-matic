@@ -55,4 +55,4 @@ if [[ $? != 0 ]]; then
 fi
 
 # Compare.
-diff -r "$output_path"/expect "$output_path"/execute | fgrep -v pmatic
+diff -x pmatic -x .pmatic -r "$output_path"/expect "$output_path"/execute
