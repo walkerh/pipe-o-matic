@@ -350,8 +350,23 @@ class AbstractPipeline(object):
     def run(self, namespace):
         """Main entry point for a pipeline object."""
         self.before_snapshot = scan_directory('.', '.pmatic')
-        # TODO: hard link "backups" of files and fifos
-        # TODO: make all regular files read-only
+        # Make hard link "backups" of all but symlinks and directories.
+        inode_dir = os.path.join(meta_path('.'), 'inode_snapshots')
+        ensure_directory_exists(inode_dir, os.makedirs)
+        for key, record in self.before_snapshot.iteritems():
+            assert os.path.exists(key)
+            format, mode, size, inode, symlink = record
+            if format not in ('DIR', 'LNK'):
+                inode_file = os.path.join(inode_dir, str(inode))
+                if os.path.exists(inode_file):
+                    if not os.path.samefile(key, inode_file):
+                        os.remove(inode_file)
+                if not os.path.exists(inode_file):
+                    os.link(key, inode_file)
+            if format == 'REG':
+                # Make all regular files read-only.
+                new_mode = mode & 07555  # TODO: may not be portable
+                os.chmod(key, new_mode)
         self.implement_run(namespace)
 
     @abc.abstractmethod
