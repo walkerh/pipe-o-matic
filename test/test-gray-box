@@ -28,7 +28,7 @@ source "$TEST_ROOT"/lib/test-setup.sh
 cd "$TEST_ROOT"  # not strictly necessary
 
 for case_dir in $(ls -r "$TEST_ROOT"/cases); do
-    if [[ "$VERBOSE" ]]; then
+    if [[ -z "$QUIET" ]]; then
         echo $case_dir
     fi
     test_case_path="$TEST_ROOT"/cases/"$case_dir"
@@ -45,3 +45,5 @@ for case_dir in $(ls -r "$TEST_ROOT"/cases); do
         exit $ERR
     fi
 done
+
+echo SUCCESS
