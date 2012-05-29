@@ -48,7 +48,8 @@ class TestSingleTaskPipeline(unittest.TestCase):
         sys.stdout = open('foo/out.txt', 'w')  # capture any diagnostic prints
         write_file('foo/spam', 'hello\nworld!!!')
         os.symlink('foo/spam', 'eggs')
-        os.lchmod('eggs', 00777)
+        if hasattr(os, 'lchmod'):
+            os.lchmod('eggs', 00777)
 
     def tearDown(self):
         fout = sys.stdout
