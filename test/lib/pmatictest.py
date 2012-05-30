@@ -71,10 +71,7 @@ class TestSingleTaskPipeline(unittest.TestCase):
         pipeline.run(namespace)
         scan = pmatic.scan_directory('.', '.pmatic')
         # For reproducibility, strip inode out of scan.
-        result = {
-            k: (f, m, s if f != 'DIR' else 0L, l)
-            for k, (f, m, s, i, l) in scan.iteritems()
-        }
+        result = {k: (f, m, s, l) for k, (f, m, s, i, l) in scan.iteritems()}
         del result['foo/out.txt']  # highly mutable file
         self.assertEqual(
             result,  # TODO: minor portability concerns...

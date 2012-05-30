@@ -477,7 +477,7 @@ def stat_item(file_name, dir_path, base_path):
     format_code = stat.S_IFMT(st.st_mode)
     format = decode_format(format_code)
     mode = stat.S_IMODE(st.st_mode)
-    size = st.st_size
+    size = st.st_size if format in ('REG', 'LNK') else 0L
     inode = st.st_ino
     symlink = os.readlink(path) if format == 'LNK' else None
     key = os.path.relpath(path, base_path)
