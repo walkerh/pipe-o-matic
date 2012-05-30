@@ -74,11 +74,11 @@ class TestSingleTaskPipeline(unittest.TestCase):
             k: (f, m, s if f != 'DIR' else 0L, l)
             for k, (f, m, s, i, l) in scan.iteritems()
         }
+        del result['foo/out.txt']  # highly mutable file
         self.assertEqual(
             result,  # TODO: minor portability concerns...
             {'eggs':        ('LNK', 0777,  8L, 'foo/spam'),
              'foo':         ('DIR', 0755,  0L, None),
-             'foo/out.txt': ('REG', 0444,  0L, None),
              'foo/spam':    ('REG', 0444, 15L, None),
              'probe':       ('REG', 0544, 74L, None),
              'probe.err':   ('REG', 0644, 14L, None),
