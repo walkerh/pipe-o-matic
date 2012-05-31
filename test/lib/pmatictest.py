@@ -51,11 +51,14 @@ class TestSingleTaskPipeline(unittest.TestCase):
         os.chdir(self.test_dir)
         self.orig_stdout = sys.stdout
         os.mkdir('foo')
-        sys.stdout = open('foo/out.txt', 'w')  # capture any diagnostic prints
+        sys.stdout = open('out.txt', 'w')  # capture any diagnostic prints
         write_file('foo/spam', 'hello\nworld!!!')
         os.symlink('foo/spam', 'eggs')
         if hasattr(os, 'lchmod'):
             os.lchmod('eggs', 00777)
+        print self.id().rsplit('.', 1)[1]
+        print self.id()
+        print os.getcwd()
 
     def tearDown(self):
         fout = sys.stdout
@@ -75,7 +78,8 @@ class TestSingleTaskPipeline(unittest.TestCase):
         scan = pmatic.scan_directory('.')
         # For reproducibility, strip inode out of scan.
         result = {k: (f, m, s, l) for k, (f, m, s, i, l) in scan.iteritems()}
-        del result['foo/out.txt']  # highly mutable file
+        del result['out.txt']  # highly mutable file
+        self.maxDiff = None
         self.assertEqual(
             result,  # TODO: minor portability concerns...
             {'eggs':        ('LNK', 0777,  8L, 'foo/spam'),
