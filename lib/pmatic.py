@@ -426,6 +426,13 @@ class ExitCodeError(EnvironmentError):
     pass
 
 
+def restore_snapshot(snapshot_dict):
+    """Restore the working directory to the state described in snapshot_dict
+    using the contents of ./.pmatic/inode_snapshots to recover moved or
+    deletede files."""
+    pass  # TODO
+
+
 def create_snapshot():
     """Prepare to restore the state of the working directory later: Make hard
     link "backups" of all but symlinks and directories. Make all regular files
