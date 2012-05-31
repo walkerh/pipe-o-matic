@@ -69,7 +69,7 @@ class TestSingleTaskPipeline(unittest.TestCase):
         pipeline = self.pipeline_loader.load_pipeline('run-probe-1')
         namespace = pmatic.Namespace()
         pipeline.run(namespace)
-        scan = pmatic.scan_directory('.', '.pmatic')
+        scan = pmatic.scan_directory('.')
         # For reproducibility, strip inode out of scan.
         result = {k: (f, m, s, l) for k, (f, m, s, i, l) in scan.iteritems()}
         del result['foo/out.txt']  # highly mutable file

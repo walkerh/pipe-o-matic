@@ -429,7 +429,7 @@ def create_snapshot():
     """Prepare to restore the state of the working directory later: Make hard
     link "backups" of all but symlinks and directories. Make all regular files
     read-only. Return the dict returned by scan_directory"""
-    result = scan_directory('.', '.pmatic')
+    result = scan_directory('.')
     inode_dir = os.path.join(meta_path('.'), 'inode_snapshots')
     ensure_directory_exists(inode_dir, os.makedirs)
     for key, record in result.iteritems():
@@ -449,7 +449,10 @@ def create_snapshot():
 
 
 def scan_directory(start_path, *exclude_paths):
-    """Return dict path:(format, mode, size, inode, symlink)"""
+    """Return dict path:(format, mode, size, inode, symlink).
+    exclude_paths (default '.pmatic') will not be scanned."""
+    if not exclude_paths:
+        exclude_paths = (META_DIR_NAME,)
     result = {}
     for dir_path, dir_names, file_names in os.walk(start_path):
         remove_dir_names = []
