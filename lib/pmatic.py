@@ -379,11 +379,12 @@ class SingleTaskPipeline(AbstractPipeline):
         self.executable = None
         self.arguments = []
         self.stdin = None
-        # TODO: If stdin is not redirected, connect to os.devnull
         self.stdout = None
         self.stderr = None
         # TODO: Ensure that stdout and stderr are always directed somewhere.
         self.__dict__.update(data)
+        if not self.stdin:
+            self.stdin = '/dev/null'
         assert self.executable
         assert self.version
 
