@@ -61,11 +61,9 @@ class TestSingleTaskPipeline(unittest.TestCase):
         os.umask(self.umask)
 
     def test_basic(self):
-        probe = '''#!/usr/bin/env bash
-            echo hello world from probe!!!
-            echo example error >&2'''
-        write_file('probe', probe)
-        os.chmod('probe', os.stat('probe').st_mode | stat.S_IXUSR)
+        write_probe('''#!/usr/bin/env bash
+                    echo hello world from probe!!!
+                    echo example error >&2''')
         pipeline = self.pipeline_loader.load_pipeline('run-probe-1')
         namespace = pmatic.Namespace()
         pipeline.run(namespace)
@@ -125,6 +123,12 @@ def make_test_dir(test_dir_name, *subdirs):
         shutil.rmtree(test_dir_path)
     os.makedirs(test_dir_path)
     return test_dir_path
+
+
+def write_probe(payload):
+    """Write an executable file named probe to the working directory."""
+    write_file('probe', payload)
+    os.chmod('probe', os.stat('probe').st_mode | stat.S_IXUSR)
 
 
 def write_file(file_path, payload):
