@@ -34,6 +34,7 @@ import yaml
 
 
 META_DIR_NAME = '.pmatic'
+TRASH_DIR_NAME = '.trash_boxes'
 STAT_TESTS = [
     (getattr(stat, 'S_IS' + name), name)
     for name in 'BLK CHR DIR FIFO LNK REG SOCK'.split()
@@ -433,15 +434,11 @@ def restore_snapshot(snapshot_dict):
     assert isinstance(snapshot_dict, dict)
     current_scan = scan_directory('.')
     # Delete anything new.
+    trash_can = TrashCan()
     for key, record in reversed(current_scan.items()):
         matching_record = snapshot_dict.get(key)  # None if not found
         if strip_permissions(record) != strip_permissions(matching_record):
-            # TODO: Switch to a trash can system.
-            format = record[0]
-            if format == 'DIR':
-                os.rmdir(key)
-            else:
-                os.remove(key)
+            trash_can.trash(key)
     # Restore anything old.
     for key, record in sorted(snapshot_dict.items()):
         format, mode, size, inode, symlink = record
@@ -495,7 +492,7 @@ def scan_directory(start_path, *exclude_paths):
     """Return dict path:(format, mode, size, inode, symlink).
     exclude_paths (default '.pmatic') will not be scanned."""
     if not exclude_paths:
-        exclude_paths = (META_DIR_NAME,)
+        exclude_paths = (META_DIR_NAME, TRASH_DIR_NAME)
     result = {}
     for dir_path, dir_names, file_names in os.walk(start_path):
         remove_dir_names = []
@@ -549,6 +546,23 @@ def lchmod(path, mode):
             os.lchmod(path, mode)
     else:
         os.chmod(path, mode)
+
+
+class TrashCan(object):
+    """A place to move files, prior to deleting them. This class may not
+    work correctly if the working directory is changed after construction."""
+    def __init__(self):
+        self.working_dir = os.getcwd()
+        self.path = os.path.join(TRASH_DIR_NAME, datetime.utcnow().isoformat())
+
+    def trash(self, rel_path):
+        """Move the object at rel_path to the coresponding relative path
+        inside self.path. This method assumes that the working directory has
+        not changed since construction and that rel_path is inside the working
+        directory."""
+        assert os.getcwd() == self.working_dir
+        assert not os.path.isabs(rel_path)
+        os.renames(rel_path, os.path.join(self.path, rel_path))
 
 
 def fail_dependencies(dependency_finder, unlisted, missing, bad_type):
