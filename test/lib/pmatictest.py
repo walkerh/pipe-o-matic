@@ -51,7 +51,8 @@ class TestSingleTaskPipeline(unittest.TestCase):
         os.chdir(self.test_dir)
         self.orig_stdout = sys.stdout
         os.mkdir('foo')
-        sys.stdout = open('out.txt', 'w')  # capture any diagnostic prints
+        os.mkdir('.pmatic')
+        sys.stdout = open('.pmatic/out.txt', 'w')  # capture diagnostic prints
         write_file('foo/spam', 'hello\nworld!!!')
         os.symlink('foo/spam', 'eggs')
         if hasattr(os, 'lchmod'):
@@ -78,7 +79,6 @@ class TestSingleTaskPipeline(unittest.TestCase):
         scan = pmatic.scan_directory('.')
         # For reproducibility, strip inode out of scan.
         result = {k: (f, m, s, l) for k, (f, m, s, i, l) in scan.iteritems()}
-        del result['out.txt']  # highly mutable file
         self.maxDiff = None
         self.assertEqual(
             result,  # TODO: minor portability concerns...
