@@ -430,7 +430,42 @@ def restore_snapshot(snapshot_dict):
     """Restore the working directory to the state described in snapshot_dict
     using the contents of ./.pmatic/inode_snapshots to recover moved or
     deletede files."""
+    assert isinstance(snapshot_dict, dict)
+    current_scan = scan_directory('.')
+    # Delete anything new.
+    for key, record in reversed(current_scan.items()):
+        matching_record = snapshot_dict.get(key)  # None if not found
+        if strip_permissions(record) != strip_permissions(matching_record):
+            # TODO: Switch to a trash can system.
+            format = record[0]
+            if format == 'DIR':
+                os.rmdir(key)
+            else:
+                os.remove(key)
+    # Restore anything old.
+    for key, record in sorted(snapshot_dict.items()):
+        format, mode, size, inode, symlink = record
+        if not os.path.exists(key):
+            if format == 'DIR':
+                os.mkdir(key)
+            elif format == 'LNK':
+                os.symlink(symlink, key)
+            else:
+                target = os.path.join(meta_path('.'),
+                                      'inode_snapshots',
+                                      str(inode))
+                os.link(target, key)
+        os.lchmod(key, mode)
     pass  # TODO
+
+
+def strip_permissions(record):
+    if record == None:
+        result = None
+    else:
+        format, mode, size, inode, symlink = record
+        result = format, size, inode, symlink
+    return result
 
 
 def create_snapshot():
@@ -489,7 +524,7 @@ def stat_item(file_name, dir_path, base_path):
     format = decode_format(format_code)
     mode = stat.S_IMODE(st.st_mode)
     size = st.st_size if format in ('REG', 'LNK') else 0L
-    inode = st.st_ino
+    inode = st.st_ino if format not in ('DIR', 'LNK') else 0L
     symlink = os.readlink(path) if format == 'LNK' else None
     key = os.path.relpath(path, base_path)
     return key, format, mode, size, inode, symlink
