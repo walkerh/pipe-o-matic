@@ -109,6 +109,7 @@ class TestSingleTaskPipeline(unittest.TestCase):
         pprint.pprint(scan2)
         pmatic.restore_snapshot(scan1)
         scan3 = pmatic.scan_directory('.')
+        pprint.pprint(scan3)
         self.maxDiff = None
         self.assertEqual(scan1, scan3)
 
