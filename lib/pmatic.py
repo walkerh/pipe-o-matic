@@ -455,7 +455,7 @@ def restore_snapshot(snapshot_dict):
                                       'inode_snapshots',
                                       str(inode))
                 os.link(target, key)
-        os.lchmod(key, mode)
+        lchmod(key, mode)
     pass  # TODO
 
 
@@ -487,7 +487,7 @@ def create_snapshot():
                 os.link(key, inode_file)
         if format == 'REG':
             new_mode = mode & 07555  # TODO: may not be portable
-            os.chmod(key, new_mode)
+            lchmod(key, new_mode)
     return result
 
 
@@ -538,6 +538,17 @@ def decode_format(format_code):
             format = name
     assert format, 'A filesystem object must have some type'
     return format
+
+
+def lchmod(path, mode):
+    """If path is not a symlink, do a regular chmod. If path is a symlink
+    and os.lchmod is available, do os.lchmod. If path is a symlink and
+    os.lchmod is not available, do nothing."""
+    if os.path.islink(path):
+        if hasattr(os, 'lchmod'):
+            os.lchmod(path, mode)
+    else:
+        os.chmod(path, mode)
 
 
 def fail_dependencies(dependency_finder, unlisted, missing, bad_type):

@@ -55,8 +55,7 @@ class TestSingleTaskPipeline(unittest.TestCase):
         sys.stdout = open('.pmatic/out.txt', 'w')  # capture diagnostic prints
         write_file('foo/spam', 'hello\nworld!!!')
         os.symlink('foo/spam', 'eggs')
-        if hasattr(os, 'lchmod'):
-            os.lchmod('eggs', 00777)
+        pmatic.lchmod('eggs', 00777)
         print self.id().rsplit('.', 1)[1]
         print self.id()
         print os.getcwd()
