@@ -95,8 +95,7 @@ class TestSingleTaskPipeline(unittest.TestCase):
                     echo hello world from probe! | tee bar
                     mv eggs eggs2
                     ls -l foo/spam
-                    rm foo/spam
-                    ''')
+                    rm foo/spam''')
         pipeline = self.pipeline_loader.load_pipeline('run-probe-1')
         namespace = pmatic.Namespace()
         scan1 = pmatic.scan_directory('.')

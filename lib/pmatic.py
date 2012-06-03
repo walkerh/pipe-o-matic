@@ -453,7 +453,6 @@ def restore_snapshot(snapshot_dict):
                                       str(inode))
                 os.link(target, key)
         lchmod(key, mode)
-    pass  # TODO
 
 
 def strip_permissions(record):
@@ -468,7 +467,7 @@ def strip_permissions(record):
 def create_snapshot():
     """Prepare to restore the state of the working directory later: Make hard
     link "backups" of all but symlinks and directories. Make all regular files
-    read-only. Return the dict returned by scan_directory"""
+    read-only. Return the dict returned by scan_directory."""
     result = scan_directory('.')
     inode_dir = os.path.join(meta_path('.'), 'inode_snapshots')
     ensure_directory_exists(inode_dir, os.makedirs)
