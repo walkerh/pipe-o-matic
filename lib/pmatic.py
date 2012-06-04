@@ -125,6 +125,7 @@ class EventLog(object):
     # TODO: Start using lockfile.
     def __init__(self, context_path):
         super(EventLog, self).__init__()
+        self.context_path = context_path
         self.events_path = os.path.join(meta_path(context_path), 'events')
         self.db_path = os.path.join(self.events_path, 'db')
         self.new_path = os.path.join(self.events_path, 'new')
@@ -136,7 +137,9 @@ class EventLog(object):
         is already running or the last entry in the EventLog was an error."""
         self.ensure_log_exists()
         # TODO: Check for previous state.
-        self.post_event(pipeline_name, 'started', **kwds)
+        before_snapshot = create_snapshot(self.context_path)
+        self.post_event(pipeline_name, 'started',
+                        snapshot=before_snapshot, **kwds)
 
     def record_pipeline_finished(self, pipeline_name, **kwds):
         """Records completion of a pipeline. Raises exception unless the
@@ -348,7 +351,6 @@ class AbstractPipeline(object):
 
     def run(self, namespace):
         """Main entry point for a pipeline object."""
-        self.before_snapshot = create_snapshot('.')
         self.implement_run(namespace)
 
     @abc.abstractmethod
@@ -357,9 +359,7 @@ class AbstractPipeline(object):
         raise NotImplementedError
 
     def record_pipeline_started(self, **kwds):
-        self.event_log.record_pipeline_started(
-            self.pipeline_name, snapshot=self.before_snapshot, **kwds
-        )
+        self.event_log.record_pipeline_started(self.pipeline_name, **kwds)
 
     def record_pipeline_error(self, **kwds):
         self.event_log.record_pipeline_error(self.pipeline_name, **kwds)
