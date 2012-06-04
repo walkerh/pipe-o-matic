@@ -433,10 +433,12 @@ def restore_snapshot(snapshot_dict, context_path):
     current_scan = scan_directory(context_path)
     # Delete anything new.
     trash_can = TrashCan(context_path)
-    for key, record in reversed(current_scan.items()):
+    items_to_check = list(sorted(current_scan.items()))
+    for key, record in items_to_check:
         matching_record = snapshot_dict.get(key)  # None if not found
         if strip_permissions(record) != strip_permissions(matching_record):
-            trash_can.trash(key)
+            if os.path.lexists(key):
+                trash_can.trash(key)
     # Restore anything old.
     for key, record in sorted(snapshot_dict.items()):
         format, mode, size, inode, symlink = record
@@ -559,8 +561,15 @@ class TrashCan(object):
         inside self.trash_path. This method assumes that rel_path is inside
         self.context_path."""
         assert not os.path.isabs(rel_path)
-        os.renames(os.path.join(self.context_path, rel_path),
-                   os.path.join(self.trash_path,   rel_path))
+        abs_path = os.path.join(self.context_path, rel_path)
+        rel_dir_path = os.path.dirname(rel_path)
+        dest_dir_path = os.path.join(self.trash_path, rel_dir_path)
+        dest_path = os.path.join(self.trash_path, rel_path)
+        ensure_directory_exists(dest_dir_path, os.makedirs)
+        if os.path.isdir(abs_path) and os.path.exists(dest_path):
+            os.rmdir(abs_path)
+        else:
+            os.rename(abs_path, dest_path)
 
 
 def fail_dependencies(dependency_finder, unlisted, missing, bad_type):
