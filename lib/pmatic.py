@@ -247,6 +247,18 @@ class Event(object):
         if not hasattr(self, 'id'):  # TODO: doing this here maybe too eager
             self.id = gen_uuid_str()
 
+    def __repr__(self):
+        d = vars(self).copy()
+        for n in 'pipeline_name what parent_event_id'.split():
+            del d[n]
+        return '%s(%r, %r, %r, **%r' % (
+            self.__class__.__name__,
+            self.pipeline_name,
+            self.what,
+            self.parent_event_id,
+            d
+        )
+
 
 class DependencyFinder(object):
     """Keeps track of where the dependencies are located on disk."""
