@@ -348,7 +348,7 @@ class AbstractPipeline(object):
 
     def run(self, namespace):
         """Main entry point for a pipeline object."""
-        self.before_snapshot = create_snapshot()
+        self.before_snapshot = create_snapshot('.')
         self.implement_run(namespace)
 
     @abc.abstractmethod
@@ -425,14 +425,14 @@ class ExitCodeError(EnvironmentError):
     pass
 
 
-def restore_snapshot(snapshot_dict):
+def restore_snapshot(snapshot_dict, context_path):
     """Restore the working directory to the state described in snapshot_dict
     using the contents of ./.pmatic/inode_snapshots to recover moved or
     deletede files."""
     assert isinstance(snapshot_dict, dict)
-    current_scan = scan_directory('.')
+    current_scan = scan_directory(context_path)
     # Delete anything new.
-    trash_can = TrashCan()
+    trash_can = TrashCan(context_path)
     for key, record in reversed(current_scan.items()):
         matching_record = snapshot_dict.get(key)  # None if not found
         if strip_permissions(record) != strip_permissions(matching_record):
@@ -440,17 +440,18 @@ def restore_snapshot(snapshot_dict):
     # Restore anything old.
     for key, record in sorted(snapshot_dict.items()):
         format, mode, size, inode, symlink = record
-        if not os.path.exists(key):
+        path = os.path.join(context_path, key)
+        if not os.path.exists(path):
             if format == 'DIR':
-                os.mkdir(key)
+                os.mkdir(path)
             elif format == 'LNK':
-                os.symlink(symlink, key)
+                os.symlink(symlink, path)
             else:
-                target = os.path.join(meta_path('.'),
+                target = os.path.join(meta_path(context_path),
                                       'inode_snapshots',
                                       str(inode))
-                os.link(target, key)
-        lchmod(key, mode)
+                os.link(target, path)
+        lchmod(path, mode)
 
 
 def strip_permissions(record):
@@ -462,26 +463,27 @@ def strip_permissions(record):
     return result
 
 
-def create_snapshot():
+def create_snapshot(context_path):
     """Prepare to restore the state of the working directory later: Make hard
     link "backups" of all but symlinks and directories. Make all regular files
     read-only. Return the dict returned by scan_directory."""
-    result = scan_directory('.')
-    inode_dir = os.path.join(meta_path('.'), 'inode_snapshots')
+    result = scan_directory(context_path)
+    inode_dir = os.path.join(meta_path(context_path), 'inode_snapshots')
     ensure_directory_exists(inode_dir, os.makedirs)
     for key, record in result.iteritems():
-        assert os.path.exists(key)
+        path = os.path.join(context_path, key)
+        assert os.path.exists(path)
         format, mode, size, inode, symlink = record
         if format not in ('DIR', 'LNK'):
             inode_file = os.path.join(inode_dir, str(inode))
             if os.path.exists(inode_file):
-                if not os.path.samefile(key, inode_file):
+                if not os.path.samefile(path, inode_file):
                     os.remove(inode_file)
             if not os.path.exists(inode_file):
-                os.link(key, inode_file)
+                os.link(path, inode_file)
         if format == 'REG':
             new_mode = mode & 07555  # TODO: may not be portable
-            lchmod(key, new_mode)
+            lchmod(path, new_mode)
     return result
 
 
@@ -546,20 +548,19 @@ def lchmod(path, mode):
 
 
 class TrashCan(object):
-    """A place to move files, prior to deleting them. This class may not
-    work correctly if the working directory is changed after construction."""
-    def __init__(self):
-        self.working_dir = os.getcwd()
-        self.path = os.path.join(TRASH_DIR_NAME, datetime.utcnow().isoformat())
+    """A place to move files, prior to deleting them."""
+    def __init__(self, context_path):
+        self.context_path = context_path
+        self.trash_path = os.path.join(context_path, TRASH_DIR_NAME,
+                                       datetime.utcnow().isoformat())
 
     def trash(self, rel_path):
         """Move the object at rel_path to the coresponding relative path
-        inside self.path. This method assumes that the working directory has
-        not changed since construction and that rel_path is inside the working
-        directory."""
-        assert os.getcwd() == self.working_dir
+        inside self.trash_path. This method assumes that rel_path is inside
+        self.context_path."""
         assert not os.path.isabs(rel_path)
-        os.renames(rel_path, os.path.join(self.path, rel_path))
+        os.renames(os.path.join(self.context_path, rel_path),
+                   os.path.join(self.trash_path,   rel_path))
 
 
 def fail_dependencies(dependency_finder, unlisted, missing, bad_type):
