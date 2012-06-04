@@ -19,6 +19,7 @@
 # along with Pipe-o-matic.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import pprint
 import shutil
 import stat
 import sys
@@ -88,8 +89,7 @@ class TestSingleTaskPipeline(unittest.TestCase):
              'probe.out':   ('REG', 0644, 45L, None)}
         )
 
-    def test_revert(self):
-        print 'hello'
+    def test_revert_01(self):
         write_probe('''#!/usr/bin/env bash
                     echo hello world from probe! | tee bar
                     mv eggs eggs2
@@ -101,7 +101,6 @@ class TestSingleTaskPipeline(unittest.TestCase):
         pipeline.run(namespace)
         scan2 = pmatic.scan_directory('.')
         self.assertNotEqual(scan1, scan2)
-        import pprint
         pprint.pprint(scan1)
         pprint.pprint(scan2)
         pmatic.restore_snapshot(scan1, '.')
@@ -111,7 +110,6 @@ class TestSingleTaskPipeline(unittest.TestCase):
         self.assertEqual(scan1, scan3)
 
     def test_revert_02(self):
-        print 'hello'
         write_probe('''#!/usr/bin/env bash
                     echo hello world from probe! | tee bar
                     mv eggs eggs2
@@ -125,7 +123,6 @@ class TestSingleTaskPipeline(unittest.TestCase):
         pipeline.run(namespace)
         scan2 = pmatic.scan_directory('.')
         self.assertNotEqual(scan1, scan2)
-        import pprint
         pprint.pprint(scan1)
         pprint.pprint(scan2)
         pmatic.restore_snapshot(scan1, '.')
