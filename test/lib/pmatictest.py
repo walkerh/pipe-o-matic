@@ -42,8 +42,7 @@ class TestSingleTaskPipeline(unittest.TestCase):
         self.dependency_finder = pmatic.DependencyFinder(self.pmatic_base)
         self.test_dir = make_test_dir('SingleTaskPipeline',
                                       self.id().rsplit('.', 1)[1])
-        self.meta_path = pmatic.meta_path(self.test_dir)
-        self.event_log = pmatic.EventLog(self.meta_path)
+        self.event_log = pmatic.EventLog(self.test_dir)
         self.pipeline_loader = pmatic.PipelineLoader(
             self.pmatic_base, self.dependency_finder, self.event_log
         )

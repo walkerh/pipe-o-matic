@@ -75,11 +75,10 @@ class PipelineEngine(object):
         super(PipelineEngine, self).__init__()
         self.pmatic_base = abspath(pmatic_base)
         self.context_path = abspath(context_path)
-        self.meta_path = meta_path(self.context_path)
         self.verbose = verbose
         self.params = params
         self.dependency_finder = DependencyFinder(pmatic_base)
-        self.event_log = EventLog(self.meta_path)
+        self.event_log = EventLog(self.context_path)
         self.pipeline_loader = PipelineLoader(
             pmatic_base, self.dependency_finder, self.event_log
         )
@@ -88,7 +87,6 @@ class PipelineEngine(object):
         """Main starting point. Will attempt to start or restart the
         pipeline."""
         self.debug('running %s in %s', pipeline_name, self.context_path)
-        ensure_directory_exists(self.meta_path)
         # TODO: Add command-line support for creating context directory.
         pipeline = self.pipeline_loader.load_pipeline(pipeline_name)
         self.event_log.ensure_log_exists()
@@ -125,9 +123,9 @@ class EventLog(object):
     """Manages recording a reading of pipeline events.
     Uses a lockfile to achieve atomicity."""
     # TODO: Start using lockfile.
-    def __init__(self, meta_path):
+    def __init__(self, context_path):
         super(EventLog, self).__init__()
-        self.events_path = os.path.join(meta_path, 'events')
+        self.events_path = os.path.join(meta_path(context_path), 'events')
         self.db_path = os.path.join(self.events_path, 'db')
         self.new_path = os.path.join(self.events_path, 'new')
         self.head_path = os.path.join(self.events_path, 'head')
