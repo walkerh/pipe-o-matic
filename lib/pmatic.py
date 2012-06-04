@@ -212,13 +212,19 @@ class EventLog(object):
             self.event_data = []
         event = Event(pipeline_name, what, parent_event_id, **kwds)
         self.event_data.insert(0, event)
+        self.save_event(event)
+        self.save_new_head(event.id)
+
+    def save_event(self, event):
         event_file_name = event.id + '.yaml'
         new_event_path = os.path.join(self.new_path, event_file_name)
         final_event_path = os.path.join(self.db_path, event_file_name)
-        new_head_path = os.path.join(self.new_path, 'head')
         save_yaml_file(new_event_path, event.__dict__)
-        save_yaml_file(new_head_path, event.id)
         os.rename(new_event_path, final_event_path)
+
+    def save_new_head(self, event_id):
+        new_head_path = os.path.join(self.new_path, 'head')
+        save_yaml_file(new_head_path, event_id)
         os.rename(new_head_path, self.head_path)
 
     @property
