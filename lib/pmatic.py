@@ -428,7 +428,7 @@ class ExitCodeError(EnvironmentError):
 def restore_snapshot(snapshot_dict, context_path):
     """Restore the working directory to the state described in snapshot_dict
     using the contents of ./.pmatic/inode_snapshots to recover moved or
-    deletede files."""
+    deleted files."""
     assert isinstance(snapshot_dict, dict)
     current_scan = scan_directory(context_path)
     # Delete anything new.
