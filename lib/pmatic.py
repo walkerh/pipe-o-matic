@@ -34,7 +34,7 @@ import yaml
 
 
 META_DIR_NAME = '.pmatic'
-TRASH_DIR_NAME = '.trash_boxes'
+TRASH_DIR_NAME = '.trash_cans'
 STAT_TESTS = [
     (getattr(stat, 'S_IS' + name), name)
     for name in 'BLK CHR DIR FIFO LNK REG SOCK'.split()
