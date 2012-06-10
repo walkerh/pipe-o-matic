@@ -132,6 +132,24 @@ class EventLog(object):
         self.head_path = os.path.join(self.events_path, 'head')
         self.event_data = None
 
+    def revert_one(self):
+        """Assuming there has been at least one pipeline start, revert
+        to the previous state."""
+        self.read_log()
+        pipeline_name = self.get_current_pipeline_name()
+        assert pipeline_name
+        event = None
+        for index, event in enumerate(self.event_data):
+            if event.what == 'started':
+                break
+        assert isinstance(event, Event)
+        assert event.what == 'started'
+        assert event.pipeline_name == pipeline_name
+        new_head_id = event.parent_event_id
+        restore_snapshot(event.snapshot, self.context_path)
+        self.record_pipeline_reverted(pipeline_name, new_head_id)
+        self.read_log()
+
     def record_pipeline_started(self, pipeline_name, **kwds):
         """Records start of a pipeline. Raises exception if another pipeline
         is already running or the last entry in the EventLog was an error."""
@@ -154,6 +172,14 @@ class EventLog(object):
         self.ensure_log_exists()
         # TODO: Check for previous state.
         self.post_event(pipeline_name, 'error', **kwds)
+
+    def record_pipeline_reverted(self, pipeline_name, new_head_id, **kwds):
+        """Records reverting execution of a pipeline. Raises exception unless
+        the immediately previous log entry was "error" or "finished"."""
+        self.ensure_log_exists()
+        # TODO: Check for previous state.
+        self.post_event(pipeline_name, 'reverted', **kwds)
+        self.save_new_head(new_head_id)
 
     def get_status(self):
         """Return terse execution status. Possible values:

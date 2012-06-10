@@ -131,6 +131,33 @@ class TestSingleTaskPipeline(unittest.TestCase):
         self.maxDiff = None
         self.assertEqual(scan1, scan3)
 
+    def test_revert_03(self):
+        write_probe('''#!/usr/bin/env bash
+                    echo hello world from probe! | tee bar
+                    mv eggs eggs2
+                    ls -l foo/spam
+                    rm foo/spam''')
+        pipeline = self.pipeline_loader.load_pipeline('run-probe-1')
+        namespace = pmatic.Namespace()
+        event_log = pmatic.EventLog(self.test_dir)
+        event_log.read_log()
+        self.assertFalse(event_log.event_data)
+        pprint.pprint(vars(event_log))
+        scan1 = pmatic.scan_directory('.')
+        pprint.pprint(scan1)
+        pipeline.run(namespace)
+        scan2 = pmatic.scan_directory('.')
+        self.assertNotEqual(scan1, scan2)
+        event_log = pmatic.EventLog(self.test_dir)
+        event_log.read_log()
+        self.assertTrue(event_log.event_data)
+        pprint.pprint(vars(event_log))
+        event_log.revert_one()
+        self.assertFalse(event_log.event_data)
+        scan3 = pmatic.scan_directory('.')
+        self.assertEqual(scan1, scan3)
+        pprint.pprint(scan3)
+
 
 class TestEventLog(unittest.TestCase):
     def setUp(self):
