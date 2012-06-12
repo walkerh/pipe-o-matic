@@ -21,51 +21,30 @@
 # You should have received a copy of the GNU General Public License
 # along with Pipe-o-matic.  If not, see <http://www.gnu.org/licenses/>.
 
-output_path="$1"
-run="$PROJECT_ROOT"/bin/pmaticrun
+setup "$@"
 
 # Generate expected results.
-
+(  # Use a sub-shell to isolate side-effects.
 # Deliberate fail script
-cat >"$output_path"/expect/probe <<EOD
+cat >"$expect_path"/probe <<EOD
 #!/usr/bin/env bash
 exit 42
 EOD
 
-chmod +x "$output_path"/expect/probe
+chmod +x "$expect_path"/probe
 
-touch "$output_path"/expect/probe.err
+touch "$expect_path"/probe.err
 
-cat >"$output_path"/expect/probe.out <<EOD
+cat >"$expect_path"/probe.out <<EOD
 probe on
 probe off
 EOD
-
+)
+check_expected
 
 # Generate pipeline results.
-if [[ "$VERBOSE" ]]; then
-    PMATIC_OPTS='-v'
-    # File handle 3 either goes to stdout or to /dev/null
-    exec 3>&1
-else
-    exec 3>/dev/null
-fi
-cp "$output_path"/expect/probe "$output_path"/execute/
+cp "$expect_path"/probe "$execute_path"/
+should_fail 1 "$pmaticrun" $PMATIC_OPTS run-probe-1 "$execute_path"
+should_fail 2 "$pmaticrun" $PMATIC_OPTS bar-1 "$execute_path"
 
-"$run" $PMATIC_OPTS run-probe-1 "$output_path"/execute 2>&3
-if [[ $? == 0 ]]; then
-    echo "Missing error 1 in $0"
-elif [[ "$VERBOSE" ]]; then
-    echo "Expected error 1 received"
-fi
-
-"$run" $PMATIC_OPTS bar-1 "$output_path"/execute 2>&3
-if [[ $? == 0 ]]; then
-    echo "Missing error 2 in $0"
-elif [[ "$VERBOSE" ]]; then
-    echo "Expected error 2 received"
-fi
-
-
-# Compare.
-diff -r -x '*pmatic' "$output_path"/expect "$output_path"/execute
+compare

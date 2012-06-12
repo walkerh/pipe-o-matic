@@ -20,30 +20,23 @@
 # You should have received a copy of the GNU General Public License
 # along with Pipe-o-matic.  If not, see <http://www.gnu.org/licenses/>.
 
-output_path="$1"
+setup "$@"
 
 # Generate expected results.
-cp data/foo-input "$output_path"/expect/
 (  # Use a sub-shell to isolate side-effects.
-    set -e  # Exit upon error.
-    cd "$output_path"/expect/
+    cp data/foo-input "$expect_path"/
+    cd "$expect_path"/
     "$TEST_ROOT"/dummies/bar-1.1/bin/bar >bar.log
     cat foo-input | "$TEST_ROOT"/dummies/foo-1.0/bin/foo 123 abc >foo.log
 )
+check_expected
 
 # Generate pipeline results.
-cp data/foo-input "$output_path"/execute/
 (  # Use a sub-shell to isolate side-effects.
-    set -e  # Exit upon error.
-    if [[ "$VERBOSE" ]]; then
-        PMATIC_OPTS='-v'
-    fi
-    "$PROJECT_ROOT"/bin/pmaticrun $PMATIC_OPTS bar-1 "$output_path"/execute
-    "$PROJECT_ROOT"/bin/pmaticrun $PMATIC_OPTS foo-1 "$output_path"/execute
+    cp data/foo-input "$execute_path"/
+    "$pmaticrun" $PMATIC_OPTS bar-1 "$execute_path"
+    "$pmaticrun" $PMATIC_OPTS foo-1 "$execute_path"
 )
-if [[ $? != 0 ]]; then
-    echo "Error in $0"
-fi
+check_execute
 
-# Compare.
-diff -x pmatic -x .pmatic -qr "$output_path"/expect "$output_path"/execute
+compare

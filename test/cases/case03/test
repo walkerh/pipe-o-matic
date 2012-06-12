@@ -20,39 +20,32 @@
 # You should have received a copy of the GNU General Public License
 # along with Pipe-o-matic.  If not, see <http://www.gnu.org/licenses/>.
 
-output_path="$1"
-status="$PROJECT_ROOT"/bin/pmaticstatus
-run="$PROJECT_ROOT"/bin/pmaticrun
+setup "$@"
 
 # Generate expected results.
-
-cat >"$output_path"/expect/probe <<EOD
+(  # Use a sub-shell to isolate side-effects.
+cat >"$expect_path"/probe <<EOD
 #!/usr/bin/env bash
 echo hello world
 EOD
 
-chmod +x "$output_path"/expect/probe
+chmod +x "$expect_path"/probe
 
-touch "$output_path"/expect/probe.err
+touch "$expect_path"/probe.err
 
-cat >"$output_path"/expect/probe.out <<EOD
+cat >"$expect_path"/probe.out <<EOD
 probe on
 hello world
 probe off
 EOD
+)
+check_expected
 
 # Generate pipeline results.
 (  # Use a sub-shell to isolate side-effects.
-    set -e  # Exit upon error.
-    if [[ "$VERBOSE" ]]; then
-        PMATIC_OPTS='-v'
-    fi
-    cp "$output_path"/expect/probe "$output_path"/execute/
-    "$run" $PMATIC_OPTS run-probe-1 "$output_path"/execute
+    cp "$expect_path"/probe "$execute_path"/
+    "$pmaticrun" $PMATIC_OPTS run-probe-1 "$execute_path"
 )
-if [[ $? != 0 ]]; then
-    echo "Error in $0"
-fi
+check_execute
 
-# Compare.
-diff -x pmatic -x .pmatic -r "$output_path"/expect "$output_path"/execute
+compare

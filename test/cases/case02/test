@@ -20,27 +20,22 @@
 # You should have received a copy of the GNU General Public License
 # along with Pipe-o-matic.  If not, see <http://www.gnu.org/licenses/>.
 
-output_path="$1"
-status="$PROJECT_ROOT"/bin/pmaticstatus
-run="$PROJECT_ROOT"/bin/pmaticrun
+setup "$@"
+
 # Generate expected results.
-echo never_run >"$output_path"/expect/st1
-echo finished >"$output_path"/expect/st2
-echo inside bar >"$output_path"/expect/bar.log
+(  # Use a sub-shell to isolate side-effects.
+    echo never_run >"$expect_path"/st1
+    echo finished >"$expect_path"/st2
+    echo inside bar >"$expect_path"/bar.log
+)
+check_expected
 
 # Generate pipeline results.
 (  # Use a sub-shell to isolate side-effects.
-    set -e  # Exit upon error.
-    if [[ "$VERBOSE" ]]; then
-        PMATIC_OPTS='-v'
-    fi
-    "$status" $PMATIC_OPTS "$output_path"/execute >"$output_path"/execute/st1
-    "$run" $PMATIC_OPTS bar-1 "$output_path"/execute
-    "$status" $PMATIC_OPTS "$output_path"/execute >"$output_path"/execute/st2
+    "$pmaticstatus" $PMATIC_OPTS "$execute_path" >"$execute_path"/st1
+    "$pmaticrun" $PMATIC_OPTS bar-1 "$execute_path"
+    "$pmaticstatus" $PMATIC_OPTS "$execute_path" >"$execute_path"/st2
 )
-if [[ $? != 0 ]]; then
-    echo "Error in $0"
-fi
+check_execute
 
-# Compare.
-diff -x pmatic -x .pmatic -r "$output_path"/expect "$output_path"/execute
+compare
