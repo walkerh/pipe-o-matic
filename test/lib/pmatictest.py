@@ -36,19 +36,19 @@ class TestSingleTaskPipeline(unittest.TestCase):
 
     def setUp(self):
         self.umask = os.umask(022)
-        self.uuid_mocker = GenUuidStrMocker()
         self.pmatic_base = os.path.join(
             os.environ['PROJECT_ROOT'], 'test/pmatic_base'
         )
-        self.dependency_finder = pmatic.DependencyFinder(self.pmatic_base)
         self.test_dir = make_test_dir('SingleTaskPipeline',
                                       self.id().rsplit('.', 1)[1])
+        self.cwd = os.getcwd()
+        os.chdir(self.test_dir)
+        self.uuid_mocker = GenUuidStrMocker()
+        self.dependency_finder = pmatic.DependencyFinder(self.pmatic_base)
         self.event_log = pmatic.EventLog(self.test_dir)
         self.pipeline_loader = pmatic.PipelineLoader(
             self.pmatic_base, self.dependency_finder, self.event_log
         )
-        self.cwd = os.getcwd()
-        os.chdir(self.test_dir)
         self.orig_stdout = sys.stdout
         os.mkdir('foo')
         os.mkdir('.pmatic')
@@ -64,8 +64,8 @@ class TestSingleTaskPipeline(unittest.TestCase):
         fout = sys.stdout
         sys.stdout = self.orig_stdout
         fout.close()
-        os.chdir(self.cwd)
         self.uuid_mocker.close()
+        os.chdir(self.cwd)
         os.umask(self.umask)
 
     def test_basic(self):
