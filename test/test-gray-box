@@ -42,8 +42,9 @@ for case_dir in $(ls -r "$TEST_ROOT"/cases); do
     ERR=$?
     if [[ $ERR != 0 ]]; then
         echo $case_dir failed
+        echo FAIL
         exit $ERR
     fi
 done
 
-echo SUCCESS
+echo PASS
