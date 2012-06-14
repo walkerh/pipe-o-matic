@@ -25,22 +25,22 @@ source "$TEST_ROOT"/lib/test-setup.sh
 
 cd "$TEST_ROOT"  # not strictly necessary
 
-for case_dir in $(ls -r "$TEST_ROOT"/cases); do
+for case_script in $(ls -r "$TEST_ROOT"/cases); do
     if [[ -z "$QUIET" ]]; then
-        echo $case_dir
+        echo $case_script
     fi
-    test_case_path="$TEST_ROOT"/cases/"$case_dir"
-    output_path="$PROJECT_ROOT"/target/test/"$case_dir"
+    test_case_path="$TEST_ROOT"/cases/"$case_script"
+    output_path="$PROJECT_ROOT"/target/test/"$case_script"
     rm -rf "$output_path"
     mkdir -p "$output_path"
     mkdir "$output_path"/execute
     mkdir "$output_path"/expect
     ln -s .pmatic "$output_path"/execute/pmatic
     export BASH_ENV="$TEST_ROOT"/lib/gray-box-setup.sh
-    "$test_case_path"/test "$output_path"
+    "$test_case_path" "$output_path"
     ERR=$?
     if [[ $ERR != 0 ]]; then
-        echo $case_dir failed
+        echo $case_script failed
         echo FAIL
         exit $ERR
     fi
