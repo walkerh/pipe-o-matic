@@ -57,8 +57,8 @@ check_execute() {
 should_fail() {
     error_id=$1
     shift
-    ("$@" >&3 2>&3)  # Run command from remaining arguments
-    if [[ $? == 0 ]]; then
+    # Run command from remaining arguments
+    if "$@" >&3 2>&3; then
         echo "Missing error $error_id in $test_name"
         exit 3
     elif [[ "$VERBOSE" ]]; then
