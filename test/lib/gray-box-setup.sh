@@ -18,19 +18,19 @@
 # You should have received a copy of the GNU General Public License
 # along with Pipe-o-matic.  If not, see <http://www.gnu.org/licenses/>.
 
-if [[ "$VERBOSE" ]]; then
-    PMATIC_OPTS='-v'
-    exec 3>&1  # File handle 3 either goes to stdout or to /dev/null
-else
-    exec 3>/dev/null
-fi
-
 exec 2>&1
 
 export PYTHONPATH="$TEST_PYTHONPATH"
 
 setup() {
     set -e  # Exit upon error.
+    if [[ "$VERBOSE" ]]; then
+        set -x # Trace execution.
+        PMATIC_OPTS='-v'
+        exec 3>&1  # File handle 3 either goes to stdout or to /dev/null
+    else
+        exec 3>/dev/null
+    fi
     output_path="$1"
     test_name=$(basename "$1")
     expect_path="$output_path"/expect
