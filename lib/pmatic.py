@@ -481,7 +481,8 @@ def restore_snapshot(snapshot_dict, context_path):
     for key, record in items_to_check:
         matching_record = snapshot_dict.get(key)  # None if not found
         if strip_permissions(record) != strip_permissions(matching_record):
-            if os.path.lexists(key):
+            path = os.path.join(context_path, key)
+            if os.path.lexists(path):
                 trash_can.trash(key)
     # Restore anything old.
     for key, record in sorted(snapshot_dict.items()):
