@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+
+# Testing of pmaticrevert
+
+# Author: Walker Hale (hale@bcm.edu), 2012
+#         Human Genome Sequencing Center, Baylor College of Medicine
+#
+# This file is part of Pipe-o-matic.
+#
+# Pipe-o-matic is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Pipe-o-matic is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Pipe-o-matic.  If not, see <http://www.gnu.org/licenses/>.
+
+setup "$@"
+
+# Generate expected results.
+(  # Use a sub-shell to isolate side-effects.
+    cp data/foo-input "$expect_path"/
+    cd "$expect_path"/
+    "$pmaticrun" $PMATIC_OPTS bar-1 "$expect_path"
+    # cat foo-input | "$TEST_ROOT"/dummies/foo-1.0/bin/foo 123 abc >foo.log
+    # ls spaz
+)
+check_expected
+
+# Generate pipeline results.
+(  # Use a sub-shell to isolate side-effects.
+    cp data/foo-input "$execute_path"/
+    "$pmaticrun" $PMATIC_OPTS bar-1 "$execute_path"
+    "$pmaticrun" $PMATIC_OPTS foo-1 "$execute_path"
+    "$pmaticrevert" $PMATIC_OPTS "$execute_path"
+) 2>&1
+check_execute
+
+compare

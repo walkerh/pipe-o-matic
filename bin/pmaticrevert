@@ -1,0 +1,52 @@
+#!/usr/bin/env python2.7
+
+"""Report status of pipeline execution in a particular context (directory)."""
+
+# Author: Walker Hale (hale@bcm.edu), 2012
+#         Human Genome Sequencing Center, Baylor College of Medicine
+#
+# This file is part of Pipe-o-matic.
+#
+# Pipe-o-matic is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Pipe-o-matic is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Pipe-o-matic.  If not, see <http://www.gnu.org/licenses/>.
+
+import argparse
+import os
+import sys
+
+import pmatic
+
+
+def main(args=None):
+    if not args:
+        args = sys.argv[1:]
+    parser = build_command_parser()
+    command = parser.parse_args(args)
+    if command.verbose:
+        pmatic.print_err('reverting one execution in %s', command.context_path)
+    event_log = pmatic.EventLog(pmatic.abspath(command.context_path))
+    event_log.revert_one()
+
+
+def build_command_parser():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('-v', '--verbose', action='store_true')
+    parser.add_argument(
+        'context_path',
+        help='the directory that defines the context of execution'
+    )
+    return parser
+
+
+if __name__ == '__main__':
+    main()

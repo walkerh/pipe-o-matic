@@ -38,6 +38,7 @@ setup() {
     bin_path="$PROJECT_ROOT"/bin
     pmaticrun="$bin_path"/pmaticrun
     pmaticstatus="$bin_path"/pmaticstatus
+    pmaticrevert="$bin_path"/pmaticrevert
 }
 
 check_expected() {
@@ -68,7 +69,7 @@ should_fail() {
 
 compare() {
     # ls spaz
-    (diff -x pmatic -x .pmatic -qr "$expect_path" "$execute_path")
+    (diff -x pmatic -x .pmatic -x .trash_cans -qr "$expect_path" "$execute_path")
     if [[ $? != 0 ]]; then
         echo "Failed results in $test_name"
         exit 4

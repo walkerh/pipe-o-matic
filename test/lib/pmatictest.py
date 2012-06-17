@@ -26,6 +26,7 @@ import sys
 import unittest
 
 import pmatic
+import pmaticrevert
 
 
 class TestSingleTaskPipeline(unittest.TestCase):
@@ -158,6 +159,22 @@ class TestSingleTaskPipeline(unittest.TestCase):
         os.chdir('..')
         event_log.revert_one()
         self.assertFalse(event_log.event_data)
+        scan3 = pmatic.scan_directory(self.test_dir)
+        self.assertEqual(scan1, scan3)
+        pprint.pprint(scan3)
+
+    def test_revert_04(self):
+        write_file('foo-input', 'hello\nworld')
+        namespace = pmatic.Namespace()
+        self.pipeline_loader.load_pipeline('bar-1').run(namespace)
+        scan1 = pmatic.scan_directory(self.test_dir)
+        pprint.pprint(scan1)
+        self.pipeline_loader.load_pipeline('foo-1').run(namespace)
+        os.chdir('..')
+        scan2 = pmatic.scan_directory(self.test_dir)
+        pprint.pprint(scan2)
+        self.assertNotEqual(scan1, scan2)
+        pmaticrevert.main((self.test_dir,))
         scan3 = pmatic.scan_directory(self.test_dir)
         self.assertEqual(scan1, scan3)
         pprint.pprint(scan3)
