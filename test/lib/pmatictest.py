@@ -77,16 +77,17 @@ class TestSingleTaskPipeline(unittest.TestCase):
         pipeline.run(namespace)
         scan = pmatic.scan_directory('.')
         # For reproducibility, strip inode out of scan.
-        result = {k: (f, m, s, l) for k, (f, m, s, i, l) in scan.iteritems()}
+        result = {k: (f, m & 0777, int(s), l)
+                  for k, (f, m, s, i, l) in scan.iteritems()}
         self.maxDiff = None
         self.assertEqual(
             result,  # TODO: minor portability concerns...
-            {'eggs':        ('LNK', 0777,  8L, 'foo/spam'),
-             'foo':         ('DIR', 0755,  0L, None),
-             'foo/spam':    ('REG', 0444, 15L, None),
-             'probe':       ('REG', 0544, 74L, None),
-             'probe.err':   ('REG', 0644, 14L, None),
-             'probe.out':   ('REG', 0644, 45L, None)}
+            {'eggs':        ('LNK', 0777,  8, 'foo/spam'),
+             'foo':         ('DIR', 0755,  0, None),
+             'foo/spam':    ('REG', 0444, 15, None),
+             'probe':       ('REG', 0544, 74, None),
+             'probe.err':   ('REG', 0644, 14, None),
+             'probe.out':   ('REG', 0644, 45, None)}
         )
 
     def test_revert_01(self):
