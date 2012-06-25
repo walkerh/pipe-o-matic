@@ -383,7 +383,7 @@ class AbstractPipeline(object):
         self.load(data)
 
     @abc.abstractmethod
-    def load(self, pipeline_name, version, data):
+    def load(self, data):
         """Deserialize pipeline data."""
         raise NotImplementedError
 
