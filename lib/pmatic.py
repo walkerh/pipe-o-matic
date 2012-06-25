@@ -150,35 +150,36 @@ class EventLog(object):
         self.record_pipeline_reverted(pipeline_name, new_head_id)
         self.read_log()
 
-    def record_pipeline_started(self, pipeline_name, **kwds):
+    def record_pipeline_started(self, pipeline, **kwds):
         """Records start of a pipeline. Raises exception if another pipeline
         is already running or the last entry in the EventLog was an error."""
         self.ensure_log_exists()
         # TODO: Check for previous state.
         before_snapshot = create_snapshot(self.context_path)
-        self.post_event(pipeline_name, 'started',
+        self.post_event(pipeline, 'started',
                         snapshot=before_snapshot, **kwds)
 
-    def record_pipeline_finished(self, pipeline_name, **kwds):
+    def record_pipeline_finished(self, pipeline, **kwds):
         """Records completion of a pipeline. Raises exception unless the
         immediately previous log entry was "started"."""
         self.ensure_log_exists()
         # TODO: Check for previous state.
-        self.post_event(pipeline_name, 'finished', **kwds)
+        self.post_event(pipeline, 'finished', **kwds)
 
-    def record_pipeline_error(self, pipeline_name, **kwds):
+    def record_pipeline_error(self, pipeline, **kwds):
         """Records error of a pipeline. Raises exception unless the
         immediately previous log entry was "started"."""
         self.ensure_log_exists()
         # TODO: Check for previous state.
-        self.post_event(pipeline_name, 'error', **kwds)
+        self.post_event(pipeline, 'error', **kwds)
 
     def record_pipeline_reverted(self, pipeline_name, new_head_id, **kwds):
         """Records reverting execution of a pipeline. Raises exception unless
         the immediately previous log entry was "error" or "finished"."""
         self.ensure_log_exists()
         # TODO: Check for previous state.
-        self.post_event(pipeline_name, 'reverted', **kwds)
+        fake_pipeline = Namespace(pipeline_name=pipeline_name)
+        self.post_event(fake_pipeline, 'reverted', **kwds)
         self.save_new_head(new_head_id)
 
     def get_status(self):
@@ -229,14 +230,14 @@ class EventLog(object):
         )
         return Event(**event_data)
 
-    def post_event(self, pipeline_name, what, **kwds):
+    def post_event(self, pipeline, what, **kwds):
         """Store the specified event, and update head."""
         if self.event_data:
             parent_event_id = self.event_data[0].id
         else:
             parent_event_id = None
             self.event_data = []
-        event = Event(pipeline_name, what, parent_event_id, **kwds)
+        event = Event(pipeline.pipeline_name, what, parent_event_id, **kwds)
         self.event_data.insert(0, event)
         self.save_event(event)
         self.save_new_head(event.id)
@@ -403,13 +404,13 @@ class AbstractPipeline(object):
         raise NotImplementedError
 
     def record_pipeline_started(self, **kwds):
-        self.event_log.record_pipeline_started(self.pipeline_name, **kwds)
+        self.event_log.record_pipeline_started(self, **kwds)
 
     def record_pipeline_error(self, **kwds):
-        self.event_log.record_pipeline_error(self.pipeline_name, **kwds)
+        self.event_log.record_pipeline_error(self, **kwds)
 
     def record_pipeline_finished(self, **kwds):
-        self.event_log.record_pipeline_finished(self.pipeline_name, **kwds)
+        self.event_log.record_pipeline_finished(self, **kwds)
 
 
 class SingleTaskPipeline(AbstractPipeline):

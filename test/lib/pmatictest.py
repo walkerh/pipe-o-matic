@@ -191,10 +191,11 @@ class TestEventLog(unittest.TestCase):
 
     def test_basic(self):
         event_log = self.event_log
+        mock_pipeline = pmatic.Namespace(pipeline_name='test-pipeline-1')
         self.assertEqual(event_log.get_status(), 'never_run')
-        event_log.record_pipeline_started('test-pipeline-1')
+        event_log.record_pipeline_started(mock_pipeline)
         self.assertEqual(event_log.get_status(), 'started')
-        event_log.record_pipeline_finished('test-pipeline-1')
+        event_log.record_pipeline_finished(mock_pipeline)
         self.assertEqual(event_log.get_status(), 'finished')
 
 
