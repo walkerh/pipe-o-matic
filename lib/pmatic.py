@@ -39,6 +39,7 @@ STAT_TESTS = [
     (getattr(stat, 'S_IS' + name), name)
     for name in 'BLK CHR DIR FIFO LNK REG SOCK'.split()
 ]
+EVENT_TYPES = 'started finished failed reverted'.split()
 
 
 def parse_args_and_env(args, parser):
@@ -265,6 +266,7 @@ class EventLog(object):
 class Event(object):
     """A single event in the event log"""
     def __init__(self, pipeline_name, what, parent_event_id, **kwds):
+        assert what in EVENT_TYPES
         super(Event, self).__init__()
         self.file_type = 'event-1'
         self.pipeline_name = pipeline_name
