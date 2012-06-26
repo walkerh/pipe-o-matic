@@ -169,6 +169,7 @@ class EventLog(object):
     def record_pipeline_error(self, pipeline, **kwds):
         """Records error of a pipeline. Raises exception unless the
         immediately previous log entry was "started"."""
+        # TODO: Get some test coverage here.
         self.ensure_log_exists()
         # TODO: Check for previous state.
         self.post_event(pipeline, 'error', **kwds)
@@ -194,6 +195,7 @@ class EventLog(object):
         return self.event_data[0].what
 
     def get_current_pipeline_name(self):
+        """Return name of currently executing pipeline or None."""
         if not self.log_exists:
             return None
         if not self.event_data:
