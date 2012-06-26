@@ -166,17 +166,17 @@ class EventLog(object):
         # TODO: Check for previous state.
         self.post_event(pipeline, 'finished', **kwds)
 
-    def record_pipeline_error(self, pipeline, **kwds):
+    def record_pipeline_failed(self, pipeline, **kwds):
         """Records error of a pipeline. Raises exception unless the
         immediately previous log entry was "started"."""
         # TODO: Get some test coverage here.
         self.ensure_log_exists()
         # TODO: Check for previous state.
-        self.post_event(pipeline, 'error', **kwds)
+        self.post_event(pipeline, 'failed', **kwds)
 
     def record_pipeline_reverted(self, pipeline_name, new_head_id, **kwds):
         """Records reverting execution of a pipeline. Raises exception unless
-        the immediately previous log entry was "error" or "finished"."""
+        the immediately previous log entry was "failed" or "finished"."""
         self.ensure_log_exists()
         # TODO: Check for previous state.
         fake_pipeline = Namespace(pipeline_name=pipeline_name)
@@ -408,8 +408,8 @@ class AbstractPipeline(object):
     def record_pipeline_started(self, **kwds):
         self.event_log.record_pipeline_started(self, **kwds)
 
-    def record_pipeline_error(self, **kwds):
-        self.event_log.record_pipeline_error(self, **kwds)
+    def record_pipeline_failed(self, **kwds):
+        self.event_log.record_pipeline_failed(self, **kwds)
 
     def record_pipeline_finished(self, **kwds):
         self.event_log.record_pipeline_finished(self, **kwds)
@@ -456,13 +456,13 @@ class SingleTaskPipeline(AbstractPipeline):
                 )
                 exit_code = proc.wait()
         except Exception, e:
-            self.record_pipeline_error(exception=str(e))
+            self.record_pipeline_failed(exception=str(e))
             raise
         else:
             if exit_code == 0:
                 self.record_pipeline_finished()
             else:
-                self.record_pipeline_error(exit_code=exit_code)
+                self.record_pipeline_failed(exit_code=exit_code)
                 raise ExitCodeError(exit_code,
                                     'exit code from %r' % executable_path)
 
